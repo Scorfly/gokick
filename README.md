@@ -11,7 +11,6 @@ If you are looking for the KICK API docs, see the [KICK Developer website](https
 
 ## TODO
 
- - [ ] Support query params il list categories
  - [ ] Support User access token on Client
  - [ ] Add example of how to use the client to get categories
  - [ ] Implement all remaining paths
