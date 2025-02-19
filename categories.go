@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type (
@@ -17,8 +18,36 @@ type CategoryResponse struct {
 	Thumbnail string `json:"thumbnail"`
 }
 
-func (c *Client) GetCategories(ctx context.Context) (CategoriesResponseWrapper, error) {
-	response, err := makeRequest[[]CategoryResponse](ctx, c, http.MethodGet, "/public/v1/categories", http.StatusOK, http.NoBody)
+type CategoryListFilter struct {
+	queryParams url.Values
+}
+
+func NewCategoryListFilter() CategoryListFilter {
+	return CategoryListFilter{queryParams: make(url.Values)}
+}
+
+func (f CategoryListFilter) SetQuery(query string) CategoryListFilter {
+	f.queryParams.Set("q", query)
+	return f
+}
+
+func (f CategoryListFilter) ToQueryString() string {
+	if len(f.queryParams) == 0 {
+		return ""
+	}
+
+	return "?" + f.queryParams.Encode()
+}
+
+func (c *Client) GetCategories(ctx context.Context, filter CategoryListFilter) (CategoriesResponseWrapper, error) {
+	response, err := makeRequest[[]CategoryResponse](
+		ctx,
+		c,
+		http.MethodGet,
+		fmt.Sprintf("/public/v1/categories%s", filter.ToQueryString()),
+		http.StatusOK,
+		http.NoBody,
+	)
 	if err != nil {
 		return CategoriesResponseWrapper{}, err
 	}

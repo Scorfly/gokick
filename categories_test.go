@@ -13,13 +13,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewCategoryListFilterSuccess(t *testing.T) {
+	testCases := map[string]struct {
+		filter              gokick.CategoryListFilter
+		expectedQueryString string
+	}{
+		"default": {
+			filter:              gokick.NewCategoryListFilter(),
+			expectedQueryString: "",
+		},
+		"with query": {
+			filter:              gokick.NewCategoryListFilter().SetQuery("test"),
+			expectedQueryString: "?q=test",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedQueryString, tc.filter.ToQueryString())
+		})
+	}
+}
+
 func TestGetCategoriesError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
 		kickClient, err := gokick.NewClient(&http.Client{}, "")
 		require.NoError(t, err)
 
 		var ctx context.Context
-		_, err = kickClient.GetCategories(ctx)
+		_, err = kickClient.GetCategories(ctx, gokick.NewCategoryListFilter())
 		require.EqualError(t, err, "failed to create request: net/http: nil Context")
 	})
 
@@ -27,7 +49,7 @@ func TestGetCategoriesError(t *testing.T) {
 		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "")
 		require.NoError(t, err)
 
-		_, err = kickClient.GetCategories(context.Background())
+		_, err = kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/categories": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -38,7 +60,7 @@ func TestGetCategoriesError(t *testing.T) {
 			fmt.Fprint(w, `117`)
 		})
 
-		_, err := kickClient.GetCategories(context.Background())
+		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.errorResponse`)
@@ -50,7 +72,7 @@ func TestGetCategoriesError(t *testing.T) {
 			fmt.Fprint(w, "117")
 		})
 
-		_, err := kickClient.GetCategories(context.Background())
+		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 
 		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.CategoryResponse]`)
@@ -63,7 +85,7 @@ func TestGetCategoriesError(t *testing.T) {
 			fmt.Fprint(w, "")
 		})
 
-		_, err := kickClient.GetCategories(context.Background())
+		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 
 		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
 	})
@@ -74,7 +96,7 @@ func TestGetCategoriesError(t *testing.T) {
 			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
 		})
 
-		_, err := kickClient.GetCategories(context.Background())
+		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 
 		var kickError gokick.Error
 		require.ErrorAs(t, err, &kickError)
@@ -90,7 +112,7 @@ func TestGetCategoriesSuccess(t *testing.T) {
 			fmt.Fprint(w, `{"message":"success", "data":[]}`)
 		})
 
-		categoriesResponse, err := kickClient.GetCategories(context.Background())
+		categoriesResponse, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 		require.NoError(t, err)
 		assert.Empty(t, categoriesResponse.Result)
 	})
@@ -104,7 +126,7 @@ func TestGetCategoriesSuccess(t *testing.T) {
 			]}`)
 		})
 
-		categoriesResponse, err := kickClient.GetCategories(context.Background())
+		categoriesResponse, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 		require.NoError(t, err)
 		require.Len(t, categoriesResponse.Result, 2)
 		assert.Equal(t, 1, categoriesResponse.Result[0].ID)
