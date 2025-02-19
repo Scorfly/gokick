@@ -10,14 +10,15 @@ const defaultAPIBaseURL = "https://api.kick.com"
 type Client struct {
 	innerClient *http.Client
 	url         string
+	accessToken string
 }
 
-func NewClient(client *http.Client, url string) (*Client, error) {
+func NewClient(client *http.Client, url, accessToken string) (*Client, error) {
 	if url == "" {
 		url = defaultAPIBaseURL
 	}
 
-	return &Client{innerClient: client, url: url}, nil
+	return &Client{innerClient: client, url: url, accessToken: accessToken}, nil
 }
 
 type errorResponse struct {
@@ -30,6 +31,8 @@ func (c *Client) buildURL(path string) string {
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.accessToken))
+
 	response, err := c.innerClient.Do(req)
 	if err != nil {
 		return nil, err

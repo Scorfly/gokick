@@ -11,9 +11,7 @@ If you are looking for the KICK API docs, see the [KICK Developer website](https
 
 ## TODO
 
- - [ ] Support User access token on Client
- - [ ] Add example of how to use the client to get categories
- - [ ] Implement all remaining paths
+ - [ ] Implement all remaining paths listed [here](docs/README.md)
 
 ## License
 

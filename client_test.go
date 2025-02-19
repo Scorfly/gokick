@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewClientSuccess(t *testing.T) {
-	client, err := gokick.NewClient(&http.Client{}, "api-url")
+	client, err := gokick.NewClient(&http.Client{}, "api-url", "access-token")
 	require.IsType(t, &gokick.Client{}, client)
 	require.NoError(t, err)
 }

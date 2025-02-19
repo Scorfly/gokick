@@ -31,8 +31,8 @@ const redirectURL = "http://localhost:3000/oauth/kick/callback"
 
 // Client ID and Secret from environment variables.
 var (
-	kickClientID     = os.Getenv("kickClientID")
-	kickClientSecret = os.Getenv("kickClientSecret")
+	kickClientID     = os.Getenv("KICK_CLIENT_ID")
+	kickClientSecret = os.Getenv("KICK_CLIENT_SECRET")
 )
 
 // PKCE Helper Functions.
