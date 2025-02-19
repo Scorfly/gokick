@@ -37,7 +37,7 @@ func TestNewCategoryListFilterSuccess(t *testing.T) {
 
 func TestGetCategoriesError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "")
+		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -46,7 +46,7 @@ func TestGetCategoriesError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "")
+		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
 		require.NoError(t, err)
 
 		_, err = kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
@@ -140,7 +140,7 @@ func TestGetCategoriesSuccess(t *testing.T) {
 
 func TestGetCategoryError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "")
+		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -149,7 +149,7 @@ func TestGetCategoryError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "")
+		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
 		require.NoError(t, err)
 
 		_, err = kickClient.GetCategory(context.Background(), 117)
@@ -178,7 +178,7 @@ func TestGetCategoryError(t *testing.T) {
 		_, err := kickClient.GetCategory(context.Background(), 117)
 
 		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.CategoryResponse]`)
+			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.CategoryResponse]`)
 	})
 
 	t.Run("reader failure", func(t *testing.T) {
@@ -211,9 +211,10 @@ func TestGetCategoryError(t *testing.T) {
 func TestGetCategorySuccess(t *testing.T) {
 	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"message":"success", "data":[
-				{"id":117, "name":"Hubert", "thumbnail":"Bonisseur de La Bath"}
-			]}`)
+		fmt.Fprint(w, `{
+			"message":"success",
+			"data":{"id":117, "name":"Hubert", "thumbnail":"Bonisseur de La Bath"}
+		}`)
 	})
 
 	categoryResponse, err := kickClient.GetCategory(context.Background(), 117)
@@ -227,7 +228,7 @@ func setupMockClient(t *testing.T, mockHandler http.HandlerFunc) *gokick.Client 
 	t.Helper()
 
 	server := httptest.NewServer(mockHandler)
-	kickClient, err := gokick.NewClient(&http.Client{}, fmt.Sprintf("http://%s", server.Listener.Addr()))
+	kickClient, err := gokick.NewClient(&http.Client{}, fmt.Sprintf("http://%s", server.Listener.Addr()), "access-token")
 	require.NoError(t, err)
 
 	t.Cleanup(func() { server.Close() })

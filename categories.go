@@ -56,7 +56,7 @@ func (c *Client) GetCategories(ctx context.Context, filter CategoryListFilter) (
 }
 
 func (c *Client) GetCategory(ctx context.Context, categoryID int) (CategoryResponseWrapper, error) {
-	response, err := makeRequest[[]CategoryResponse](
+	response, err := makeRequest[CategoryResponse](
 		ctx,
 		c,
 		http.MethodGet,
@@ -68,7 +68,5 @@ func (c *Client) GetCategory(ctx context.Context, categoryID int) (CategoryRespo
 		return CategoryResponseWrapper{}, err
 	}
 
-	return CategoryResponseWrapper{
-		Result: response.Result[0],
-	}, nil
+	return CategoryResponseWrapper(response), nil
 }
