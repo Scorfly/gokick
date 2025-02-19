@@ -1,0 +1,78 @@
+linters-settings:
+  funlen:
+    lines: 100
+    statements: 50
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
+  govet:
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+    enable:
+      - nilness
+      - shadow
+  errorlint:
+    asserts: false
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+  nolintlint:
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
+  revive:
+    severity: warning
+    confidence: 0.8
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - errcheck
+    - exhaustive
+    - funlen
+    - gochecknoinits
+    - gocritic
+    - gocyclo
+    - godot
+    - gofmt
+    - gofumpt
+    - goimports
+    - goprintffuncname
+    - gosimple
+    - govet
+    - importas
+    - inamedparam
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nolintlint
+    - prealloc
+    - revive
+    - rowserrcheck
+    - staticcheck
+    - stylecheck
+    - testpackage
+    - thelper
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+
+issues:
+  exclude-rules:
+    - text: "shadow: declaration of \"err\" shadows declaration at"
+      linters:
+        - govet
