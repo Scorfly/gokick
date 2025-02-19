@@ -4,8 +4,8 @@
 
 **Categories:**
 
-- [ ] Get Categories
-- [ ] Get Category
+- [x] Get Categories
+- [x] Get Category
 
 **Users:**
 

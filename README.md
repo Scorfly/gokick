@@ -1,4 +1,4 @@
-# helix
+# GoKICK
 
 A KICK API client written in Go.
 
@@ -8,6 +8,13 @@ See [here](docs/README.md) for a list of endpoints and features this package sup
 
 ## Kick API
 If you are looking for the KICK API docs, see the [KICK Developer website](https://dev.kick.com/).
+
+## TODO
+
+ - [ ] Support query params il list categories
+ - [ ] Support User access token on Client
+ - [ ] Add example of how to use the client to get categories
+ - [ ] Implement all remaining paths
 
 ## License
 
