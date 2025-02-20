@@ -14,8 +14,10 @@
 
 **Channels:**
 
-- [ ] Get Channels
-- [ ] Patch Channels
+- [x] Get Channels
+- [x] Patch Channels
+    - [x] Update Stream title
+    - [x] Update Stream category
 
 **Chat:**
 
