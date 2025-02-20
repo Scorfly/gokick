@@ -9,8 +9,8 @@
 
 **Users:**
 
-- [ ] Token Introspect
-- [ ] Get Users
+- [x] Token Introspect
+- [x] Get Users
 
 **Channels:**
 
