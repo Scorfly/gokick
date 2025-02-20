@@ -16,6 +16,11 @@ import (
 // Put your scopes here.
 var kickScopes = []string{
 	"user:read",
+	"chat:write",
+	"channel:read",
+	"channel:write",
+	"streamkey:read",
+	"events:subscribe",
 }
 
 var ENDPOINT = struct {
