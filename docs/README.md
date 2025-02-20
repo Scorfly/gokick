@@ -21,7 +21,7 @@
 
 **Chat:**
 
-- [ ] Post Chat Message
+- [x] Post Chat Message
 
 **Public Key:**
 
