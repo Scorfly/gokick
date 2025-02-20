@@ -25,7 +25,7 @@
 
 **Public Key:**
 
-- [ ] Get Public Key
+- [x] Get Public Key
 
 ## Events
 
