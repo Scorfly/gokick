@@ -31,8 +31,8 @@
 
 **Subscribe to Events:**
 
-- [ ] Get Events Subscriptions
-- [ ] Post Events Subscriptions
+- [x] Get Events Subscriptions
+- [x] Post Events Subscriptions
 - [ ] Delete Events Subscriptions
 
 **Webhook Payloads:**
