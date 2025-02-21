@@ -22,6 +22,16 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.24'
-        
+  
+    - name: Setup
+      run: |
+        go install github.com/mattn/goveralls@latest
+
     - name: Test
-      run: go test -v ./...
+      run: go test -v -covermode=count -coverprofile=coverage.out
+
+    - name: Send coverage
+      env:
+        COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+      run: |
+        goveralls -coverprofile=coverage.out -service=github
