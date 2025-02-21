@@ -33,7 +33,7 @@
 
 - [x] Get Events Subscriptions
 - [x] Post Events Subscriptions
-- [ ] Delete Events Subscriptions
+- [x] Delete Events Subscriptions
 
 **Webhook Payloads:**
 

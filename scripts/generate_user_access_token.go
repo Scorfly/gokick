@@ -67,6 +67,17 @@ func oauthKickHandler(w http.ResponseWriter, r *http.Request) {
 
 	codeChallenge := generateCodeChallenge(codeVerifier)
 
+	/* IMPORTANT:
+	   This is a VERY BAD way to store the verifier. The original non-hashed verifier is needed,
+	   later on when swapping the code for a token.
+	   In a real application you should either store the original verifier in your own
+	   database, or encrypt it with a secret before including it in the state.
+	   It's not inharently wrong to store it in the state param, but if you do,
+	   make sure it is encrypted with a secret and not just base64 encoded.
+	   The verifier system is used to "prove" that the request for authorization was
+	   started by your application, and later that the code exchange was also by your application.
+	*/
+
 	// Store the verifier in the state (not recommended for production).
 	state := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(`{"codeVerifier":"%s"}`, codeVerifier)))
 
