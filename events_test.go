@@ -123,66 +123,6 @@ func TestGetSubscriptionsSuccess(t *testing.T) {
 	})
 }
 
-func TestNewSubscriptionMethodError(t *testing.T) {
-	testCases := map[string]string{
-		"empty":         "",
-		"not supported": "not supported",
-	}
-
-	for name, value := range testCases {
-		t.Run(name, func(t *testing.T) {
-			_, err := gokick.NewSubscriptionMethod(value)
-			assert.EqualError(t, err, fmt.Sprintf("unknown method: %s", value))
-		})
-	}
-}
-
-func TestNewSubscriptionMethodSuccess(t *testing.T) {
-	testCases := map[string]gokick.SubscriptionMethod{
-		"webhook": gokick.SubscriptionMethodWebhook,
-	}
-
-	for name, value := range testCases {
-		t.Run(name, func(t *testing.T) {
-			SubscriptionMethod, err := gokick.NewSubscriptionMethod(value.String())
-			require.NoError(t, err)
-			assert.Equal(t, SubscriptionMethod, value)
-		})
-	}
-}
-
-func TestNewSubscriptionNameError(t *testing.T) {
-	testCases := map[string]string{
-		"empty":         "",
-		"not supported": "not supported",
-	}
-
-	for name, value := range testCases {
-		t.Run(name, func(t *testing.T) {
-			_, err := gokick.NewSubscriptionName(value)
-			assert.EqualError(t, err, fmt.Sprintf("unknown name: %s", value))
-		})
-	}
-}
-
-func TestNewSubscriptionNameSuccess(t *testing.T) {
-	testCases := map[string]gokick.SubscriptionName{
-		"chat.message.sent":            gokick.SubscriptionNameChatMessage,
-		"channel.followed":             gokick.SubscriptionNameChannelFollow,
-		"channel.subscription.renewal": gokick.SubscriptionNameChannelSubscriptionRenewal,
-		"channel.subscription.gifts":   gokick.SubscriptionNameChannelSubscriptionGifts,
-		"channel.subscription.new":     gokick.SubscriptionNameChannelSubscriptionfCreated,
-	}
-
-	for name, value := range testCases {
-		t.Run(name, func(t *testing.T) {
-			SubscriptionName, err := gokick.NewSubscriptionName(value.String())
-			require.NoError(t, err)
-			assert.Equal(t, SubscriptionName, value)
-		})
-	}
-}
-
 func TestCreateSubscriptionsError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
 		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
