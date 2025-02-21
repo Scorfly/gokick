@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 type (
@@ -100,4 +101,44 @@ func (c *Client) CreateSubscriptions(
 	}
 
 	return CreateSubscriptionsResponseWrapper(response), nil
+}
+
+type SubscriptionToDeleteFilter struct {
+	queryParams url.Values
+}
+
+func NewSubscriptionToDeleteFilter() SubscriptionToDeleteFilter {
+	return SubscriptionToDeleteFilter{queryParams: make(url.Values)}
+}
+
+func (f SubscriptionToDeleteFilter) SetIDs(ids []string) SubscriptionToDeleteFilter {
+	for i := range ids {
+		f.queryParams.Add("id", ids[i])
+	}
+
+	return f
+}
+
+func (f SubscriptionToDeleteFilter) ToQueryString() string {
+	if len(f.queryParams) == 0 {
+		return ""
+	}
+
+	return "?" + f.queryParams.Encode()
+}
+
+func (c *Client) DeleteSubscriptions(ctx context.Context, filter SubscriptionToDeleteFilter) (EmptyResponse, error) {
+	_, err := makeRequest[EmptyResponse](
+		ctx,
+		c,
+		http.MethodDelete,
+		fmt.Sprintf("/public/v1/events/subscriptions%s", filter.ToQueryString()),
+		http.StatusNoContent,
+		http.NoBody,
+	)
+	if err != nil {
+		return EmptyResponse{}, err
+	}
+
+	return EmptyResponse{}, nil
 }

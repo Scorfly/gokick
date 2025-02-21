@@ -90,7 +90,21 @@ output
 ## Delete Events Subscriptions
 
 ```go
+    client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+
+	response, err := client.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter().SetIDs([]string{"01JMMNxxxx"}))
+	if err != nil {
+		log.Fatalf("Failed to fetch response: %v", err)
+	}
+
+	spew.Dump("response", response)
 ```
 output
 ```
+(string) (len=8) "response"
+(gokick.EmptyResponse) {
+}
 ```
