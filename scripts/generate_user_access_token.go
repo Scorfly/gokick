@@ -1,5 +1,8 @@
 package main
 
+// This script is a copy/paste from a JS script written by [ACPixel](https://github.com/ACPixel)
+// Source: https://gist.github.com/ACPixel/bd71dc716126153e04e41700e8a8820e
+
 import (
 	"crypto/rand"
 	"crypto/sha256"
