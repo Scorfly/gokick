@@ -1,3 +1,5 @@
+![GoKICK logo](assets/gokick-logo.png)
+
 # GoKICK
 
 A KICK API client written in Go.

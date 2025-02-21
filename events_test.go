@@ -232,3 +232,104 @@ func TestCreateSubscriptionsSuccess(t *testing.T) {
 	assert.Equal(t, "subscription id", response.Result[0].SubscriptionID)
 	assert.Equal(t, 1, response.Result[0].Version)
 }
+
+func TestNewSubscriptionToDeleteFilterSuccess(t *testing.T) {
+	testCases := map[string]struct {
+		filter              gokick.SubscriptionToDeleteFilter
+		expectedQueryString string
+	}{
+		"default": {
+			filter:              gokick.NewSubscriptionToDeleteFilter(),
+			expectedQueryString: "",
+		},
+		"with query": {
+			filter:              gokick.NewSubscriptionToDeleteFilter().SetIDs([]string{"test1", "test2"}),
+			expectedQueryString: "?id=test1&id=test2",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedQueryString, tc.filter.ToQueryString())
+		})
+	}
+}
+
+func TestDeleteSubscriptionsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.DeleteSubscriptions(ctx, gokick.NewSubscriptionToDeleteFilter())
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
+		require.NoError(t, err)
+
+		_, err = kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+		require.EqualError(t, err, `failed to make request: Delete "https://api.kick.com/public/v1/events/subscriptions": context `+
+			`deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal token response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestDeleteSubscriptionsSuccess(t *testing.T) {
+	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+	require.NoError(t, err)
+}
