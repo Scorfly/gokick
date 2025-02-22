@@ -63,6 +63,8 @@ type ChannelSubscriptionCreatedEvent struct {
 	CreatedAt   string           `json:"created_at"`
 }
 
+// I set it as public to be able to change it in tests.
+// It’s not a good practice to do so, but it’s the only way to do it for now.
 var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq/+l1WnlRrGSolDMA+A8
 6rAhMbQGmQ2SapVcGM3zq8ANXjnhDWocMqfWcTd95btDydITa10kDvHzw9WQOqp2
@@ -73,6 +75,9 @@ BEbZ5jgB8s8ReQV8H+MkuffjdAj3ajDDX3DOJMIut1lBrUVD1AaSrGCKHooWoL2e
 twIDAQAB
 -----END PUBLIC KEY-----`
 
+// I set it to be able to tests without having to sign the events.
+// It’s not a good practice to do so, but it’s the only way to do it for now.
+// Do not override it in production !
 var SkipSignatureValidation = false
 
 func ValidateAndParseEvent(
