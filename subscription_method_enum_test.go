@@ -30,9 +30,9 @@ func TestNewSubscriptionMethodSuccess(t *testing.T) {
 
 	for name, value := range testCases {
 		t.Run(name, func(t *testing.T) {
-			SubscriptionMethod, err := gokick.NewSubscriptionMethod(value.String())
+			subscriptionMethod, err := gokick.NewSubscriptionMethod(value.String())
 			require.NoError(t, err)
-			assert.Equal(t, SubscriptionMethod, value)
+			assert.Equal(t, subscriptionMethod, value)
 		})
 	}
 }

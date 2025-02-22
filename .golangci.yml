@@ -76,3 +76,6 @@ issues:
     - text: "shadow: declaration of \"err\" shadows declaration at"
       linters:
         - govet
+    - path: _test\.go
+      linters:
+        - funlen
