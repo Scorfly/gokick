@@ -1,12 +1,60 @@
 package gokick_test
 
 import (
+	"errors"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/scorfly/gokick"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetEventFromRequestError(t *testing.T) {
+	t.Run("invalid subscription name", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
+		require.NoError(t, err)
+		req.Header.Set("X-Event-Subscription", "invalid")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to parse subscription name: unknown name: invalid")
+	})
+
+	t.Run("invalid body", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "https://domain.tld", faultyReader{})
+		require.NoError(t, err)
+		req.Header.Set("X-Event-Subscription", "chat.message.sent")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to read body: read error")
+	})
+
+	t.Run("cannot parse event", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
+		require.NoError(t, err)
+		req.Header.Set("X-Event-Subscription", "chat.message.sent")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to verify event validity: failed to verify signature: crypto/rsa: verification error")
+	})
+}
+
+func TestGetEventFromRequestSuccess(t *testing.T) {
+	skipSignatureValidation(t)
+
+	req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader("{}"))
+	require.NoError(t, err)
+	req.Header.Set("X-Event-Subscription", "chat.message.sent")
+	req.Header.Set("X-Event-Version", "1")
+	req.Header.Set("X-Event-Signature", "signature")
+	req.Header.Set("X-Event-Message-Id", "message ID")
+	req.Header.Set("X-Event-Timestamp", "2025-02-21T23:23:36Z")
+
+	event, err := gokick.GetEventFromRequest(req)
+	require.NoError(t, err)
+	assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+}
 
 func TestValidateAndParseEventError(t *testing.T) {
 	t.Run("failed to decode public key", func(t *testing.T) {
@@ -91,10 +139,7 @@ v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
 	})
 
 	t.Run("with invalid body", func(t *testing.T) {
-		previousKey := gokick.SkipSignatureValidation
-		t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
-
-		gokick.SkipSignatureValidation = true
+		skipSignatureValidation(t)
 
 		_, err := gokick.ValidateAndParseEvent(
 			gokick.SubscriptionNameChatMessage,
@@ -110,10 +155,7 @@ v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
 
 func TestValidateAndParseEventSuccess(t *testing.T) {
 	t.Run("with new chat message event detailed", func(t *testing.T) {
-		previousKey := gokick.SkipSignatureValidation
-		t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
-
-		gokick.SkipSignatureValidation = true
+		skipSignatureValidation(t)
 
 		event, err := gokick.ValidateAndParseEvent(
 			gokick.SubscriptionNameChatMessage,
@@ -138,10 +180,7 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 	})
 
 	t.Run("with new chat message event details with unexisting version", func(t *testing.T) {
-		previousKey := gokick.SkipSignatureValidation
-		t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
-
-		gokick.SkipSignatureValidation = true
+		skipSignatureValidation(t)
 
 		event, err := gokick.ValidateAndParseEvent(
 			gokick.SubscriptionNameChatMessage,
@@ -197,10 +236,7 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 
 		for name, testCase := range testCases {
 			t.Run(name, func(t *testing.T) {
-				previousKey := gokick.SkipSignatureValidation
-				t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
-
-				gokick.SkipSignatureValidation = true
+				skipSignatureValidation(t)
 
 				event, err := gokick.ValidateAndParseEvent(
 					testCase.subscription,
@@ -215,4 +251,18 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 			})
 		}
 	})
+}
+
+type faultyReader struct{}
+
+func (r faultyReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
+}
+
+func skipSignatureValidation(t *testing.T) {
+	t.Helper()
+
+	previousKey := gokick.SkipSignatureValidation
+	t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
+	gokick.SkipSignatureValidation = true
 }
