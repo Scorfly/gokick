@@ -1,10 +1,9 @@
 ## Get Categories
 
 ```go
-    client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+    client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
 	categories, err := client.GetCategories(context.Background(), gokick.NewCategoryListFilter().SetQuery("gaming"))
 	if err != nil {
@@ -35,15 +34,11 @@ output
 ## Get Category
 
 ```go
-client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	category, err := client.GetCategory(context.Background(), 9569)
-	if err != nil {
-		log.Fatalf("Failed to fetch category: %v", err)
-	}
+	category, _ := client.GetCategory(context.Background(), 9569)
 
 	spew.Dump("category", category)
 ```

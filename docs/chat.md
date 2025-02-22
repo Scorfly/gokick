@@ -1,15 +1,11 @@
 ## Post Chat Message
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	response, err := client.SendChatMessage(context.Background(), 721956, "my message", gokick.MessageTypeUser)
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.SendChatMessage(context.Background(), 721956, "my message", gokick.MessageTypeUser)
 
 	spew.Dump("response", response)
 ```

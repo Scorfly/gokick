@@ -1,10 +1,9 @@
 ## Get Channels
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
 	response, err := client.GetChannels(context.Background(), gokick.NewChannelListFilter())
 	if err != nil {
@@ -43,10 +42,9 @@ output
 ### Update Stream title
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
 	response, err := client.UpdateStreamTitle(context.Background(), "Test KICK API")
 	if err != nil {
@@ -65,15 +63,12 @@ output
 ### Update Stream category
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	response, err := client.UpdateStreamCategory(context.Background(), 9569)
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.UpdateStreamCategory(context.Background(), 9569)
+
 
 	spew.Dump("response", response)
 ```

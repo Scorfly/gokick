@@ -1,7 +1,6 @@
 package gokick_test
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/scorfly/gokick"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestNewClientSuccess(t *testing.T) {
-	client, err := gokick.NewClient(&http.Client{}, "api-url", "access-token")
+	client, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 	require.IsType(t, &gokick.Client{}, client)
 	require.NoError(t, err)
 }

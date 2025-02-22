@@ -1,15 +1,11 @@
 ## Get Public Key
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	response, err := client.GetPublicKey(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.GetPublicKey(context.Background())
 
 	spew.Dump("response", response)
 ```

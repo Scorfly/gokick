@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/scorfly/gokick"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 
 func TestGetPublicKeyError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -23,10 +22,9 @@ func TestGetPublicKeyError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.GetPublicKey(context.Background())
+		_, err := kickClient.GetPublicKey(context.Background())
 		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/public-key": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})

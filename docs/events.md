@@ -1,15 +1,11 @@
 ## Get Events Subscriptions
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	response, err := client.GetSubscriptions(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.GetSubscriptions(context.Background())
 
 	spew.Dump("response", response)
 ```
@@ -44,10 +40,9 @@ output
 
 ## Post Events Subscriptions
 ```go
-    client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
 	subscriptions := []gokick.SubscriptionRequest{
 		{
@@ -59,10 +54,7 @@ output
 			Version: 1,
 		},
 	}
-	response, err := client.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, subscriptions)
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, subscriptions)
 
 	spew.Dump("response", response)
 ```
@@ -90,15 +82,11 @@ output
 ## Delete Events Subscriptions
 
 ```go
-    client, err := gokick.NewClient(&http.Client{}, "", "xxxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	response, err := client.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter().SetIDs([]string{"01JMMNxxxx"}))
-	if err != nil {
-		log.Fatalf("Failed to fetch response: %v", err)
-	}
+	response, _ := client.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter().SetIDs([]string{"01JMMNxxxx"}))
 
 	spew.Dump("response", response)
 ```

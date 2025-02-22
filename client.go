@@ -5,20 +5,31 @@ import (
 	"net/http"
 )
 
-const defaultAPIBaseURL = "https://api.kick.com"
+const (
+	defaultAPIBaseURL = "https://api.kick.com"
+	authBaseURL       = "https://id.kick.com"
+)
 
 type Client struct {
-	innerClient *http.Client
-	url         string
-	accessToken string
+	options *ClientOptions
 }
 
-func NewClient(client *http.Client, url, accessToken string) (*Client, error) {
-	if url == "" {
-		url = defaultAPIBaseURL
+type ClientOptions struct {
+	UserAccessToken string
+	HTTPClient      *http.Client
+	APIBaseURL      string
+}
+
+func NewClient(options *ClientOptions) (*Client, error) {
+	if options.APIBaseURL == "" {
+		options.APIBaseURL = defaultAPIBaseURL
 	}
 
-	return &Client{innerClient: client, url: url, accessToken: accessToken}, nil
+	if options.HTTPClient == nil {
+		options.HTTPClient = &http.Client{}
+	}
+
+	return &Client{options: options}, nil
 }
 
 type errorResponse struct {
@@ -27,13 +38,13 @@ type errorResponse struct {
 }
 
 func (c *Client) buildURL(path string) string {
-	return fmt.Sprintf("%s%s", c.url, path)
+	return fmt.Sprintf("%s%s", c.options.APIBaseURL, path)
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.accessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.options.UserAccessToken))
 
-	response, err := c.innerClient.Do(req)
+	response, err := c.options.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
