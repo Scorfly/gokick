@@ -220,7 +220,7 @@ func TestCreateSubscriptionsSuccess(t *testing.T) {
 			Version: 1,
 		},
 		{
-			Name:    gokick.SubscriptionNameChannelSubscriptionfCreated,
+			Name:    gokick.SubscriptionNameChannelSubscriptionCreated,
 			Version: 1,
 		},
 	})

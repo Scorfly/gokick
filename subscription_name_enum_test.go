@@ -29,14 +29,14 @@ func TestNewSubscriptionNameSuccess(t *testing.T) {
 		"channel.followed":             gokick.SubscriptionNameChannelFollow,
 		"channel.subscription.renewal": gokick.SubscriptionNameChannelSubscriptionRenewal,
 		"channel.subscription.gifts":   gokick.SubscriptionNameChannelSubscriptionGifts,
-		"channel.subscription.new":     gokick.SubscriptionNameChannelSubscriptionfCreated,
+		"channel.subscription.new":     gokick.SubscriptionNameChannelSubscriptionCreated,
 	}
 
 	for name, value := range testCases {
 		t.Run(name, func(t *testing.T) {
-			SubscriptionName, err := gokick.NewSubscriptionName(value.String())
+			subscriptionName, err := gokick.NewSubscriptionName(value.String())
 			require.NoError(t, err)
-			assert.Equal(t, SubscriptionName, value)
+			assert.Equal(t, subscriptionName, value)
 		})
 	}
 }

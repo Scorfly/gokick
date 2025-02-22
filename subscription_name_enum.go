@@ -5,11 +5,11 @@ import "fmt"
 type SubscriptionName int
 
 const (
-	SubscriptionNameChatMessage                 SubscriptionName = iota // chat.message.sent
-	SubscriptionNameChannelFollow                                       // channel.followed
-	SubscriptionNameChannelSubscriptionRenewal                          // channel.subscription.renewal
-	SubscriptionNameChannelSubscriptionGifts                            // channel.subscription.gifts
-	SubscriptionNameChannelSubscriptionfCreated                         // channel.subscription.new
+	SubscriptionNameChatMessage                SubscriptionName = iota // chat.message.sent
+	SubscriptionNameChannelFollow                                      // channel.followed
+	SubscriptionNameChannelSubscriptionRenewal                         // channel.subscription.renewal
+	SubscriptionNameChannelSubscriptionGifts                           // channel.subscription.gifts
+	SubscriptionNameChannelSubscriptionCreated                         // channel.subscription.new
 )
 
 func NewSubscriptionName(name string) (SubscriptionName, error) {
@@ -23,7 +23,7 @@ func NewSubscriptionName(name string) (SubscriptionName, error) {
 	case "channel.subscription.gifts":
 		return SubscriptionNameChannelSubscriptionGifts, nil
 	case "channel.subscription.new":
-		return SubscriptionNameChannelSubscriptionfCreated, nil
+		return SubscriptionNameChannelSubscriptionCreated, nil
 	default:
 		return 0, fmt.Errorf("unknown name: %s", name)
 	}
@@ -39,7 +39,7 @@ func (s SubscriptionName) String() string {
 		return "channel.subscription.renewal"
 	case SubscriptionNameChannelSubscriptionGifts:
 		return "channel.subscription.gifts"
-	case SubscriptionNameChannelSubscriptionfCreated:
+	case SubscriptionNameChannelSubscriptionCreated:
 		return "channel.subscription.new"
 	default:
 		return "unknown"

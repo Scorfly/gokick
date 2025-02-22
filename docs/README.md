@@ -37,8 +37,8 @@
 
 **Webhook Payloads:**
 
-- [ ] Chat Message
-- [ ] Channel Follow
-- [ ] Channel Subscription Renewal
-- [ ] Channel Subscription Gifts
-- [ ] Channel Subscription Created
+- [x] Chat Message
+- [x] Channel Follow
+- [x] Channel Subscription Renewal
+- [x] Channel Subscription Gifts
+- [x] Channel Subscription Created
