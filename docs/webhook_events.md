@@ -14,7 +14,7 @@ Headers
 
 ```go
     subscriptionName, _ := gokick.NewSubscriptionName("chat.message.sent")  // value from "Kick-Event-Type" header
-	response, err := gokick.ValidateAndParseEvent(
+	response, _ := gokick.ValidateAndParseEvent(
 		subscriptionName,
 		"1",                                                                // value from "Kick-Event-Version" header
 		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",                          // value from "Kick-Event-Version" header
@@ -22,9 +22,6 @@ Headers
 		"2025-02-21T23:23:36Z",                                             // value from "Kick-Event-Message-Timestamp" header
 		`{"message_id":"bb9832e4-e865-48f4…"content":"Test [emote:39261:kkHuh] test[emote:39265:EDMusiC]","emotes":null}`,
 	)
-	if err != nil {
-		log.Fatalf("Failed to parse event: %v", err)
-	}
 
 	event := response.(*gokick.ChatMessageEvent) // need to cast the type depending of the subscriptionName
 
@@ -60,10 +57,7 @@ output
 
 ```go
     req := http.Request{} // your request here
-	response, err := gokick.GetEventFromRequest(req)
-	if err != nil {
-		log.Fatalf("Failed to parse event: %v", err)
-	}
+	response, _ := gokick.GetEventFromRequest(req)
 
 	event := response.(*gokick.ChatMessageEvent) // need to cast the type depending of the subscriptionName
 

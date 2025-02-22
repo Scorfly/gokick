@@ -1,15 +1,11 @@
 ## Token Introspect
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	token, err := client.TokenIntrospect(context.Background())
-	if err != nil {
-		log.Fatalf("Failed to fetch token: %v", err)
-	}
+	token, _ := client.TokenIntrospect(context.Background())
 
 	spew.Dump("token", token)
 ```
@@ -29,15 +25,11 @@ output
 ## Get Users
 
 ```go
-	client, err := gokick.NewClient(&http.Client{}, "", "xxx")
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
 
-	users, err := client.GetUsers(context.Background(), gokick.NewUserListFilter())
-	if err != nil {
-		log.Fatalf("Failed to fetch users: %v", err)
-	}
+	users, _ := client.GetUsers(context.Background(), gokick.NewUserListFilter())
 
 	spew.Dump("users", users)
 ```

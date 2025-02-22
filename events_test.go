@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/scorfly/gokick"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 
 func TestGetSubscriptionsError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -23,10 +22,9 @@ func TestGetSubscriptionsError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.GetSubscriptions(context.Background())
+		_, err := kickClient.GetSubscriptions(context.Background())
 		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/events/subscriptions": context deadline `+
 			`exceeded (Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -125,7 +123,7 @@ func TestGetSubscriptionsSuccess(t *testing.T) {
 
 func TestCreateSubscriptionsError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -134,10 +132,9 @@ func TestCreateSubscriptionsError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
 		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/events/subscriptions": context deadline `+
 			`exceeded (Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -257,7 +254,7 @@ func TestNewSubscriptionToDeleteFilterSuccess(t *testing.T) {
 
 func TestDeleteSubscriptionsError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -266,10 +263,9 @@ func TestDeleteSubscriptionsError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
+		_, err := kickClient.DeleteSubscriptions(context.Background(), gokick.NewSubscriptionToDeleteFilter())
 		require.EqualError(t, err, `failed to make request: Delete "https://api.kick.com/public/v1/events/subscriptions": context `+
 			`deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
 	})

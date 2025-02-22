@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/scorfly/gokick"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +35,7 @@ func TestNewChannelListFilterSuccess(t *testing.T) {
 
 func TestGetChannelsError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -45,10 +44,9 @@ func TestGetChannelsError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.GetChannels(context.Background(), gokick.NewChannelListFilter())
+		_, err := kickClient.GetChannels(context.Background(), gokick.NewChannelListFilter())
 		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/channels": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -155,7 +153,7 @@ func TestGetChannelsSuccess(t *testing.T) {
 
 func TestUpdateStreamTitleError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -164,10 +162,9 @@ func TestUpdateStreamTitleError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.UpdateStreamTitle(context.Background(), "new stream title")
+		_, err := kickClient.UpdateStreamTitle(context.Background(), "new stream title")
 		require.EqualError(t, err, `failed to make request: Patch "https://api.kick.com/public/v1/channels": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -234,7 +231,7 @@ func TestUpdateStreamTitleSuccess(t *testing.T) {
 
 func TestUpdateStreamCategoryError(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{}, "", "access-token")
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
 
 		var ctx context.Context
@@ -243,10 +240,9 @@ func TestUpdateStreamCategoryError(t *testing.T) {
 	})
 
 	t.Run("timeout", func(t *testing.T) {
-		kickClient, err := gokick.NewClient(&http.Client{Timeout: 1 * time.Nanosecond}, "", "access-token")
-		require.NoError(t, err)
+		kickClient := setupTimeoutMockClient(t)
 
-		_, err = kickClient.UpdateStreamCategory(context.Background(), 117)
+		_, err := kickClient.UpdateStreamCategory(context.Background(), 117)
 		require.EqualError(t, err, `failed to make request: Patch "https://api.kick.com/public/v1/channels": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
