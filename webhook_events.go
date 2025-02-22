@@ -10,6 +10,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 )
 
 type BroadcasterEvent struct {
@@ -79,6 +81,32 @@ twIDAQAB
 // It’s not a good practice to do so, but it’s the only way to do it for now.
 // Do not override it in production !
 var SkipSignatureValidation = false
+
+func GetEventFromRequest(request *http.Request) (interface{}, error) {
+	subscriptionName, err := NewSubscriptionName(request.Header.Get("X-Event-Subscription"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse subscription name: %v", err)
+	}
+
+	version := request.Header.Get("X-Event-Version")
+	eventSignature := request.Header.Get("X-Event-Signature")
+	messageID := request.Header.Get("X-Event-Message-Id")
+	timestamp := request.Header.Get("X-Event-Timestamp")
+
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read body: %v", err)
+	}
+
+	return ValidateAndParseEvent(
+		subscriptionName,
+		version,
+		eventSignature,
+		messageID,
+		timestamp,
+		string(body),
+	)
+}
 
 func ValidateAndParseEvent(
 	subscriptionName SubscriptionName,

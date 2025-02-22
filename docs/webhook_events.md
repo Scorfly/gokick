@@ -55,3 +55,17 @@ output
  Emotes: ([]gokick.ChatMessageEmotesEvent) <nil>
 })
 ```
+
+## Get event from HTTP Request
+
+```go
+    req := http.Request{} // your request here
+	response, err := gokick.GetEventFromRequest(req)
+	if err != nil {
+		log.Fatalf("Failed to parse event: %v", err)
+	}
+
+	event := response.(*gokick.ChatMessageEvent) // need to cast the type depending of the subscriptionName
+
+	spew.Dump("event", event)
+```
