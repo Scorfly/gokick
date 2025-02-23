@@ -18,11 +18,18 @@ type ClientOptions struct {
 	UserAccessToken string
 	HTTPClient      *http.Client
 	APIBaseURL      string
+	AuthBaseURL     string
+	ClientID        string
+	ClientSecret    string
 }
 
 func NewClient(options *ClientOptions) (*Client, error) {
 	if options.APIBaseURL == "" {
 		options.APIBaseURL = defaultAPIBaseURL
+	}
+
+	if options.AuthBaseURL == "" {
+		options.AuthBaseURL = authBaseURL
 	}
 
 	if options.HTTPClient == nil {
@@ -37,8 +44,8 @@ type errorResponse struct {
 	Message string      `json:"message"`
 }
 
-func (c *Client) buildURL(path string) string {
-	return fmt.Sprintf("%s%s", c.options.APIBaseURL, path)
+func (c *Client) buildURL(base, path string) string {
+	return fmt.Sprintf("%s%s", base, path)
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
