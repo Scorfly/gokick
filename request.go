@@ -8,18 +8,6 @@ import (
 	"net/http"
 )
 
-type requestOptions struct {
-	apiBaseURL string
-}
-
-type requestOption func(*requestOptions)
-
-func SetAPIBaseURL(apiBaseURL string) requestOption {
-	return func(args *requestOptions) {
-		args.apiBaseURL = apiBaseURL
-	}
-}
-
 func makeRequest[T any](
 	ctx context.Context,
 	request *Client,
@@ -27,17 +15,8 @@ func makeRequest[T any](
 	path string,
 	statusCode int,
 	body io.Reader,
-	setters ...requestOption,
 ) (Response[T], error) {
-	args := &requestOptions{
-		apiBaseURL: request.options.APIBaseURL,
-	}
-
-	for _, setter := range setters {
-		setter(args)
-	}
-
-	url := request.buildURL(args.apiBaseURL, path)
+	url := request.buildURL(request.options.APIBaseURL, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
@@ -100,17 +79,8 @@ func makeAuthRequest[T any](
 	path string,
 	statusCode int,
 	body io.Reader,
-	setters ...requestOption,
 ) (T, error) {
-	args := &requestOptions{
-		apiBaseURL: request.options.AuthBaseURL,
-	}
-
-	for _, setter := range setters {
-		setter(args)
-	}
-
-	url := request.buildURL(args.apiBaseURL, path)
+	url := request.buildURL(request.options.AuthBaseURL, path)
 
 	var response T
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
