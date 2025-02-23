@@ -16,6 +16,23 @@ type TokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+func (c *Client) GetAuthorizeEndpoint(redirectURI, state, codeChallenge string, scope []Scope) (string, error) {
+	scopes := make([]string, len(scope))
+	for i, s := range scope {
+		scopes[i] = url.QueryEscape(s.String())
+	}
+
+	return fmt.Sprintf(
+		"%s/oauth/authorize?client_id=%s&response_type=code&redirect_uri=%s&state=%s&scope=%s&code_challenge=%s&code_challenge_method=S256",
+		c.options.AuthBaseURL,
+		c.options.ClientID,
+		url.QueryEscape(redirectURI),
+		state,
+		strings.Join(scopes, "+"),
+		codeChallenge,
+	), nil
+}
+
 func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (TokenResponse, error) {
 	if c.options.ClientID == "" {
 		return TokenResponse{}, fmt.Errorf("client ID must be set on Client to refresh token")

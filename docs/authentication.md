@@ -1,3 +1,24 @@
+## Get authorize endpoint
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID: "client-id",
+	})
+
+	response, _ := client.GetAuthorizeEndpoint(
+		"http://localhost:3000/oauth/kick/callback",
+		"custom-state",
+		"custome-code-challenge",
+		[]gokick.Scope{gokick.ScopeUserRead, gokick.ScopeChannelRead},
+	)
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(string) (len=347) "https://id.kick.com/oauth/authorize?client_id=client-id&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fkick%2Fcallback&state=custom-state&scope=user%3Aread+channel%3Aread&code_challenge=custom-code-challenge&code_challenge_method=S256"
+```
+
 ## Refresh token
 
 ```go
