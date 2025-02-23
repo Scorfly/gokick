@@ -2,6 +2,13 @@
 
 ## APIs
 
+**Authentication:**
+
+- [x] Authorization Endpoint
+- [ ] Token Endpoint
+- [x] Refresh Token Endpoint
+- [x] Revoke Token Endpoint
+
 **Categories:**
 
 - [x] Get Categories
@@ -16,8 +23,8 @@
 
 - [x] Get Channels
 - [x] Patch Channels
-    - [x] Update Stream title
-    - [x] Update Stream category
+  - [x] Update Stream title
+  - [x] Update Stream category
 
 **Chat:**
 

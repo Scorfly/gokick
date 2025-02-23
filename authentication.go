@@ -66,3 +66,24 @@ func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (TokenRe
 
 	return response, nil
 }
+
+// TODO: Currently having issue : https://github.com/KickEngineering/KickDevDocs/issues/58
+func (c *Client) RevokeToken(ctx context.Context, tokenType TokenType, token string) error {
+	formData := url.Values{}
+	formData.Set("token_hint_type", tokenType.String())
+	formData.Set("token", token)
+
+	_, err := makeAuthRequest[TokenResponse](
+		ctx,
+		c,
+		http.MethodPost,
+		"/oauth/revoke",
+		http.StatusOK,
+		strings.NewReader(formData.Encode()),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -159,3 +159,113 @@ func TestRefreshTokenSuccess(t *testing.T) {
 	assert.Equal(t, "user:read chat:write channel:read channel:write streamkey:read events:subscribe", response.Scope)
 	assert.Equal(t, "Bearer", response.TokenType)
 }
+
+func TestRevokeTokenError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{
+			ClientID:     "client-id",
+			ClientSecret: "client-secret",
+		})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		err = kickClient.RevokeToken(ctx, gokick.TokenTypeAccess, "access-token")
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockAuthClient(t)
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+		require.EqualError(t, err, `failed to make request: Post "https://id.kick.com/oauth/revoke": context deadline exceeded `+
+			`(Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal token response", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.TokenResponse`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestRevokeTokenSuccess(t *testing.T) {
+	testCases := map[string]struct {
+		tokenType     gokick.TokenType
+		token         string
+		expectedPath  string
+		expectedToken string
+		tokenHintType string
+	}{
+		"access token": {
+			tokenType:     gokick.TokenTypeAccess,
+			token:         "access-token",
+			expectedPath:  "/oauth/revoke",
+			expectedToken: "access-token",
+			tokenHintType: "access_token",
+		},
+		"refresh token": {
+			tokenType:     gokick.TokenTypeRefresh,
+			token:         "refresh-token",
+			expectedPath:  "/oauth/revoke",
+			expectedToken: "refresh-token",
+			tokenHintType: "refresh_token",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, tc.expectedPath, r.URL.Path)
+				assert.Equal(t, tc.expectedToken, r.FormValue("token"))
+				assert.Equal(t, tc.tokenHintType, r.FormValue("token_hint_type"))
+
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, `{}`)
+			})
+
+			err := kickClient.RevokeToken(context.Background(), tc.tokenType, tc.token)
+			require.NoError(t, err)
+		})
+	}
+}

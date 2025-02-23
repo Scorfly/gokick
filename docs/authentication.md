@@ -42,3 +42,23 @@ output
  RefreshToken: (string) (len=48) "MJJIYWU2ZMMTNZxxxx"
 }
 ```
+
+## Revoke token
+
+Currently not working: https://github.com/KickEngineering/KickDevDocs/issues/58
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:     "01JMFMAxxxxx",
+		ClientSecret: "894b81xxxxx",
+	})
+
+	err := client.RevokeToken(
+		context.Background(),
+		gokick.TokenTypeAccess,
+		"MGNMZJxxxx",
+	)
+```
+output
+```
+```
