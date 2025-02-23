@@ -33,6 +33,38 @@ func (c *Client) GetAuthorizeEndpoint(redirectURI, state, codeChallenge string, 
 	), nil
 }
 
+func (c *Client) GetToken(ctx context.Context, redirectURI, code, codeVerifier string) (TokenResponse, error) {
+	if c.options.ClientID == "" {
+		return TokenResponse{}, fmt.Errorf("client ID must be set on Client to refresh token")
+	}
+
+	if c.options.ClientSecret == "" {
+		return TokenResponse{}, fmt.Errorf("client secret must be set on Client to refresh token")
+	}
+
+	formData := url.Values{}
+	formData.Set("grant_type", "authorization_code")
+	formData.Set("client_id", c.options.ClientID)
+	formData.Set("client_secret", c.options.ClientSecret)
+	formData.Set("code", code)
+	formData.Set("redirect_uri", redirectURI)
+	formData.Set("code_verifier", codeVerifier)
+
+	response, err := makeAuthRequest[TokenResponse](
+		ctx,
+		c,
+		http.MethodPost,
+		"/oauth/token",
+		http.StatusOK,
+		strings.NewReader(formData.Encode()),
+	)
+	if err != nil {
+		return TokenResponse{}, err
+	}
+
+	return response, nil
+}
+
 func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (TokenResponse, error) {
 	if c.options.ClientID == "" {
 		return TokenResponse{}, fmt.Errorf("client ID must be set on Client to refresh token")
