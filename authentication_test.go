@@ -11,6 +11,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetAuthorizeEndpointSuccess(t *testing.T) {
+	kickClient, err := gokick.NewClient(&gokick.ClientOptions{
+		ClientID: "client-id",
+	})
+	require.NoError(t, err)
+
+	response, err := kickClient.GetAuthorizeEndpoint(
+		"http://localhost:3000/oauth/kick/callback",
+		"custom-state",
+		"custom-code-challenge",
+		[]gokick.Scope{gokick.ScopeUserRead, gokick.ScopeChannelRead},
+	)
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		`https://id.kick.com/oauth/authorize?client_id=client-id&response_type=code&redirect_uri=`+
+			`http%3A%2F%2Flocalhost%3A3000%2Foauth%2Fkick%2Fcallback&state=custom-state&scope=user%3Aread+channel%3Aread`+
+			`&code_challenge=custom-code-challenge&code_challenge_method=S256`,
+		response,
+	)
+}
+
 func TestRefreshTokenError(t *testing.T) {
 	t.Run("client ID missing", func(t *testing.T) {
 		kickClient, err := gokick.NewClient(&gokick.ClientOptions{
