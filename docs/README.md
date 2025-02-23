@@ -5,7 +5,7 @@
 **Authentication:**
 
 - [x] Authorization Endpoint
-- [ ] Token Endpoint
+- [x] Token Endpoint
 - [x] Refresh Token Endpoint
 - [x] Revoke Token Endpoint
 
