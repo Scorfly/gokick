@@ -99,7 +99,6 @@ func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (TokenRe
 	return response, nil
 }
 
-// TODO: Currently having issue : https://github.com/KickEngineering/KickDevDocs/issues/58
 func (c *Client) RevokeToken(ctx context.Context, tokenType TokenType, token string) error {
 	formData := url.Values{}
 	formData.Set("token_hint_type", tokenType.String())
