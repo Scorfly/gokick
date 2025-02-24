@@ -74,8 +74,6 @@ output
 
 ## Revoke token
 
-Currently not working: https://github.com/KickEngineering/KickDevDocs/issues/58
-
 ```go
 	client, _ := gokick.NewClient(&gokick.ClientOptions{
 		ClientID:     "01JMFMAxxxxx",
@@ -87,7 +85,4 @@ Currently not working: https://github.com/KickEngineering/KickDevDocs/issues/58
 		gokick.TokenTypeAccess,
 		"MGNMZJxxxx",
 	)
-```
-output
-```
 ```
