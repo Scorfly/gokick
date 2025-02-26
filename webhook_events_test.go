@@ -12,6 +12,11 @@ import (
 )
 
 func TestGetEventFromRequestError(t *testing.T) {
+	t.Run("reqest not set", func(t *testing.T) {
+		_, err := gokick.GetEventFromRequest(nil)
+		require.EqualError(t, err, "request cannot be nil")
+	})
+
 	t.Run("invalid subscription name", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
 		require.NoError(t, err)
