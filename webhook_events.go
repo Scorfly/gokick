@@ -66,7 +66,7 @@ type ChannelSubscriptionCreatedEvent struct {
 }
 
 // I set it as public to be able to change it in tests.
-// It’s not a good practice to do so, but it’s the only way to do it for now.
+// It's not a good practice to do so, but it's the only way to do it for now.
 var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq/+l1WnlRrGSolDMA+A8
 6rAhMbQGmQ2SapVcGM3zq8ANXjnhDWocMqfWcTd95btDydITa10kDvHzw9WQOqp2
@@ -78,11 +78,15 @@ twIDAQAB
 -----END PUBLIC KEY-----`
 
 // I set it to be able to tests without having to sign the events.
-// It’s not a good practice to do so, but it’s the only way to do it for now.
+// It's not a good practice to do so, but it's the only way to do it for now.
 // Do not override it in production !
 var SkipSignatureValidation = false
 
 func GetEventFromRequest(request *http.Request) (interface{}, error) {
+	if request == nil {
+		return nil, errors.New("request cannot be nil")
+	}
+
 	subscriptionName, err := NewSubscriptionName(request.Header.Get("X-Event-Subscription"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse subscription name: %v", err)
