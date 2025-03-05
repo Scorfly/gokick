@@ -14,17 +14,24 @@ type (
 	ChannelResponseWrapper  Response[ChannelResponse]
 )
 
+type StreamResponse struct {
+	Key         string `json:"key"`
+	URL         string `json:"url"`
+	IsLive      bool   `json:"is_live"`
+	IsMature    bool   `json:"is_mature"`
+	Language    string `json:"language"`
+	StartTime   string `json:"start_time"`
+	ViewerCount int    `json:"viewer_count"`
+}
+
 type ChannelResponse struct {
 	BannerPicture      string           `json:"banner_picture"`
 	BroadcasterUserID  int              `json:"broadcaster_user_id"`
 	Category           CategoryResponse `json:"category"`
 	ChannelDescription string           `json:"channel_description"`
 	Slug               string           `json:"slug"`
-	Stream             struct {
-		Key string `json:"key"`
-		URL string `json:"url"`
-	} `json:"stream"`
-	StreamTitle string `json:"stream_title"`
+	Stream             StreamResponse   `json:"stream"`
+	StreamTitle        string           `json:"stream_title"`
 }
 
 type ChannelListFilter struct {
