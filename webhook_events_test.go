@@ -237,6 +237,11 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 				version:      "1",
 				expectedType: &gokick.ChannelSubscriptionCreatedEvent{},
 			},
+			"with new livestream status updated version 1": {
+				subscription: gokick.SubscriptionNameLivestreamStatusUpdated,
+				version:      "1",
+				expectedType: &gokick.LivestreamStatusUpdatedEvent{},
+			},
 		}
 
 		for name, testCase := range testCases {
