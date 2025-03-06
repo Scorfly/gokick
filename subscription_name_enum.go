@@ -10,6 +10,7 @@ const (
 	SubscriptionNameChannelSubscriptionRenewal                         // channel.subscription.renewal
 	SubscriptionNameChannelSubscriptionGifts                           // channel.subscription.gifts
 	SubscriptionNameChannelSubscriptionCreated                         // channel.subscription.new
+	SubscriptionNameLivestreamStatusUpdated                            // livestream.status.updated
 )
 
 func NewSubscriptionName(name string) (SubscriptionName, error) {
@@ -24,6 +25,8 @@ func NewSubscriptionName(name string) (SubscriptionName, error) {
 		return SubscriptionNameChannelSubscriptionGifts, nil
 	case "channel.subscription.new":
 		return SubscriptionNameChannelSubscriptionCreated, nil
+	case "livestream.status.updated":
+		return SubscriptionNameLivestreamStatusUpdated, nil
 	default:
 		return 0, fmt.Errorf("unknown name: %s", name)
 	}
@@ -41,6 +44,8 @@ func (s SubscriptionName) String() string {
 		return "channel.subscription.gifts"
 	case SubscriptionNameChannelSubscriptionCreated:
 		return "channel.subscription.new"
+	case SubscriptionNameLivestreamStatusUpdated:
+		return "livestream.status.updated"
 	default:
 		return "unknown"
 	}

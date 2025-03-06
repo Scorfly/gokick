@@ -9,6 +9,7 @@ Headers
 "Kick-Event-Message-Timestamp": "2025-02-21T23:23:36Z"
 "Kick-Event-Version": "1"
 "Kick-Event-Type":  "chat.message.sent"
+"Kick-Event-Subscription-Id": "01JMN13xxxxxx"
 "Kick-Event-Message-Id": "01JMND5PSxxxxxx"
 ```
 
