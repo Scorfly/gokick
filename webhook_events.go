@@ -65,6 +65,14 @@ type ChannelSubscriptionCreatedEvent struct {
 	CreatedAt   string           `json:"created_at"`
 }
 
+type LivestreamStatusUpdatedEvent struct {
+	Broadcaster BroadcasterEvent `json:"broadcaster"`
+	IsLive      bool             `json:"is_live"`
+	Title       string           `json:"title"`
+	StartedAt   string           `json:"started_at"`
+	EndedAt     string           `json:"ended_at"`
+}
+
 // I set it as public to be able to change it in tests.
 // It's not a good practice to do so, but it's the only way to do it for now.
 var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
@@ -208,5 +216,8 @@ var eventConstructors = map[SubscriptionName]map[string]eventConstructor{
 	},
 	SubscriptionNameChannelSubscriptionCreated: {
 		"1": func() interface{} { return new(ChannelSubscriptionCreatedEvent) },
+	},
+	SubscriptionNameLivestreamStatusUpdated: {
+		"1": func() interface{} { return new(LivestreamStatusUpdatedEvent) },
 	},
 }
