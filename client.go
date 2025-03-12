@@ -44,6 +44,12 @@ type errorResponse struct {
 	Message string      `json:"message"`
 }
 
+type authErrorResponse struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	Message          string `json:"message"`
+}
+
 func (c *Client) buildURL(base, path string) string {
 	return fmt.Sprintf("%s%s", base, path)
 }

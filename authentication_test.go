@@ -85,7 +85,7 @@ func TestGetTokenError(t *testing.T) {
 		_, err := kickClient.GetToken(context.Background(), "redirectURI", "code", "codeVerifier")
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.errorResponse`)
+			`number into Go value of type gokick.authErrorResponse`)
 	})
 
 	t.Run("unmarshal token response", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestGetTokenError(t *testing.T) {
 	t.Run("with internal server error", func(t *testing.T) {
 		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+			fmt.Fprint(w, `{"message":"internal server error"}`)
 		})
 
 		_, err := kickClient.GetToken(context.Background(), "redirectURI", "code", "codeVerifier")
@@ -124,6 +124,22 @@ func TestGetTokenError(t *testing.T) {
 		require.ErrorAs(t, err, &kickError)
 		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
 		assert.Equal(t, "internal server error", kickError.Message())
+	})
+
+	t.Run("with auth error", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error":"invalid_grant","error_description":"Error description"}`)
+		})
+
+		_, err := kickClient.GetToken(context.Background(), "redirectURI", "code", "codeVerifier")
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "invalid_grant", kickError.Message())
+		assert.Equal(t, "Error description", kickError.Description())
+		assert.EqualError(t, kickError, "Error 500: invalid_grant (Error description)")
 	})
 }
 
@@ -222,7 +238,7 @@ func TestRefreshTokenError(t *testing.T) {
 		_, err := kickClient.RefreshToken(context.Background(), "refresh-token")
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.errorResponse`)
+			`number into Go value of type gokick.authErrorResponse`)
 	})
 
 	t.Run("unmarshal token response", func(t *testing.T) {
@@ -261,6 +277,22 @@ func TestRefreshTokenError(t *testing.T) {
 		require.ErrorAs(t, err, &kickError)
 		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
 		assert.Equal(t, "internal server error", kickError.Message())
+	})
+
+	t.Run("with auth error", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error":"invalid_grant","error_description":"Error description"}`)
+		})
+
+		_, err := kickClient.RefreshToken(context.Background(), "refresh-token")
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "invalid_grant", kickError.Message())
+		assert.Equal(t, "Error description", kickError.Description())
+		assert.EqualError(t, kickError, "Error 500: invalid_grant (Error description)")
 	})
 }
 
@@ -314,7 +346,7 @@ func TestRevokeTokenError(t *testing.T) {
 
 		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.errorResponse`)
+			`number into Go value of type gokick.authErrorResponse`)
 	})
 
 	t.Run("unmarshal token response", func(t *testing.T) {
@@ -351,6 +383,22 @@ func TestRevokeTokenError(t *testing.T) {
 		require.ErrorAs(t, err, &kickError)
 		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
 		assert.Equal(t, "internal server error", kickError.Message())
+	})
+
+	t.Run("with auth error", func(t *testing.T) {
+		kickClient := setupMockAuthClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"error":"invalid_grant","error_description":"Error description"}`)
+		})
+
+		err := kickClient.RevokeToken(context.Background(), gokick.TokenTypeAccess, "access-token")
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "invalid_grant", kickError.Message())
+		assert.Equal(t, "Error description", kickError.Description())
+		assert.EqualError(t, kickError, "Error 500: invalid_grant (Error description)")
 	})
 }
 
