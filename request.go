@@ -106,7 +106,7 @@ func makeAuthRequest[T any](
 	}
 
 	if resp.StatusCode != statusCode {
-		var errorOutput errorResponse
+		var errorOutput authErrorResponse
 
 		err = json.Unmarshal(responseBody, &errorOutput)
 		if err != nil {
@@ -118,7 +118,11 @@ func makeAuthRequest[T any](
 			)
 		}
 
-		return response, NewError(resp.StatusCode, errorOutput.Message)
+		if errorOutput.Message != "" {
+			return response, NewError(resp.StatusCode, errorOutput.Message)
+		} else {
+			return response, NewError(resp.StatusCode, errorOutput.Error).WithDescription(errorOutput.ErrorDescription)
+		}
 	}
 
 	err = json.Unmarshal(responseBody, &response)
