@@ -48,6 +48,30 @@ output
 }
 ```
 
+## Get app access token
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:     "01JMFxxxxx",
+		ClientSecret: "894b81xxxxx",
+	})
+
+	response, _ := client.GetAppAccessToken(
+		context.Background(),
+	)
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.AppTokenResponse) {
+ AccessToken: (string) (len=48) "YTDKOTHxxxxx",
+ TokenType: (string) (len=6) "Bearer",
+ ExpiresIn: (int) 5184000
+}
+```
+
 ## Refresh token
 
 ```go

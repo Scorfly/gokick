@@ -16,7 +16,13 @@ type TokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-func (c *Client) GetAuthorizeEndpoint(redirectURI, state, codeChallenge string, scope []Scope) (string, error) {
+type AppTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+}
+
+func (c *Client) GetAuthorize(redirectURI, state, codeChallenge string, scope []Scope) (string, error) {
 	scopes := make([]string, len(scope))
 	for i, s := range scope {
 		scopes[i] = url.QueryEscape(s.String())
@@ -60,6 +66,35 @@ func (c *Client) GetToken(ctx context.Context, redirectURI, code, codeVerifier s
 	)
 	if err != nil {
 		return TokenResponse{}, err
+	}
+
+	return response, nil
+}
+
+func (c *Client) GetAppAccessToken(ctx context.Context) (AppTokenResponse, error) {
+	if c.options.ClientID == "" {
+		return AppTokenResponse{}, fmt.Errorf("client ID must be set on Client to refresh token")
+	}
+
+	if c.options.ClientSecret == "" {
+		return AppTokenResponse{}, fmt.Errorf("client secret must be set on Client to refresh token")
+	}
+
+	formData := url.Values{}
+	formData.Set("grant_type", "client_credentials")
+	formData.Set("client_id", c.options.ClientID)
+	formData.Set("client_secret", c.options.ClientSecret)
+
+	response, err := makeAuthRequest[AppTokenResponse](
+		ctx,
+		c,
+		http.MethodPost,
+		"/oauth/token",
+		http.StatusOK,
+		strings.NewReader(formData.Encode()),
+	)
+	if err != nil {
+		return AppTokenResponse{}, err
 	}
 
 	return response, nil
