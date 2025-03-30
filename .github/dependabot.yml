@@ -1,0 +1,32 @@
+version: 2
+
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "09:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - dependencies
+    allow:
+      - dependency-type: "direct"
+    reviewers:
+      - "Scorfly"
+      
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "09:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "chore"
+    labels:
+      - dependencies
+    reviewers:
+      - "Scorfly"
