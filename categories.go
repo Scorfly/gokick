@@ -18,6 +18,12 @@ type CategoryResponse struct {
 	Thumbnail string `json:"thumbnail"`
 }
 
+type CategoryResponseV2 struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	ImageURL string `json:"image_url"`
+}
+
 type CategoryListFilter struct {
 	queryParams url.Values
 }
