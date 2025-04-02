@@ -13,16 +13,16 @@ type (
 )
 
 type LivestreamResponse struct {
-	BroadcasterUserID int                `json:"broadcaster_user_id"`
-	Category          CategoryResponseV2 `json:"category"`
-	ChannelID         int                `json:"channel_id"`
-	HasMatureContent  bool               `json:"has_mature_content"`
-	Language          string             `json:"language"`
-	Slug              string             `json:"slug"`
-	StartedAt         string             `json:"started_at"`
-	StreamTitle       string             `json:"stream_title"`
-	ThumbnailURL      string             `json:"thumbnail_url"`
-	ViewerCount       int                `json:"viewer_count"`
+	BroadcasterUserID int              `json:"broadcaster_user_id"`
+	Category          CategoryResponse `json:"category"`
+	ChannelID         int              `json:"channel_id"`
+	HasMatureContent  bool             `json:"has_mature_content"`
+	Language          string           `json:"language"`
+	Slug              string           `json:"slug"`
+	StartedAt         string           `json:"started_at"`
+	StreamTitle       string           `json:"stream_title"`
+	ThumbnailURL      string           `json:"thumbnail_url"`
+	ViewerCount       int              `json:"viewer_count"`
 }
 
 type LivestreamListFilter struct {
