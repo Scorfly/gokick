@@ -150,7 +150,7 @@ func TestGetLivestreamsSuccess(t *testing.T) {
 				"broadcaster_user_id": 219,
 				"category": {
 					"id": 123,
-					"image_url": "category image url",
+					"thumbnail": "category image url",
 					"name": "category name"
 				},
 				"channel_id": 198,
@@ -171,7 +171,7 @@ func TestGetLivestreamsSuccess(t *testing.T) {
 		assert.Equal(t, 219, LivestreamsResponse.Result[0].BroadcasterUserID)
 		assert.Equal(t, 123, LivestreamsResponse.Result[0].Category.ID)
 		assert.Equal(t, "category name", LivestreamsResponse.Result[0].Category.Name)
-		assert.Equal(t, "category image url", LivestreamsResponse.Result[0].Category.ImageURL)
+		assert.Equal(t, "category image url", LivestreamsResponse.Result[0].Category.Thumbnail)
 		assert.Equal(t, 198, LivestreamsResponse.Result[0].ChannelID)
 		assert.Equal(t, true, LivestreamsResponse.Result[0].HasMatureContent)
 		assert.Equal(t, "fr", LivestreamsResponse.Result[0].Language)
