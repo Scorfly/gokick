@@ -61,6 +61,7 @@ type ChannelSubscriptionRenewalEvent struct {
 	Subscriber  UserEvent `json:"subscriber"`
 	Duration    int       `json:"duration"`
 	CreatedAt   string    `json:"created_at"`
+	ExpiresAt   string    `json:"expires_at"`
 }
 
 type ChannelSubscriptionGiftsEvent struct {
@@ -68,6 +69,7 @@ type ChannelSubscriptionGiftsEvent struct {
 	Gifter      UserEvent   `json:"gifter"`
 	Giftees     []UserEvent `json:"giftees"`
 	CreatedAt   string      `json:"created_at"`
+	ExpiresAt   string      `json:"expires_at"`
 }
 
 type ChannelSubscriptionCreatedEvent struct {
@@ -75,6 +77,7 @@ type ChannelSubscriptionCreatedEvent struct {
 	Subscriber  UserEvent `json:"subscriber"`
 	Duration    int       `json:"duration"`
 	CreatedAt   string    `json:"created_at"`
+	ExpiresAt   string    `json:"expires_at"`
 }
 
 type LivestreamStatusUpdatedEvent struct {
