@@ -14,13 +14,25 @@ import (
 	"net/http"
 )
 
+type Badge struct {
+	Text  string `json:"text"`
+	Type  string `json:"type"`
+	Count int    `json:"count"`
+}
+
+type IdentityEvent struct {
+	UsernameColor string  `json:"username_color"`
+	Badges        []Badge `json:"badges"`
+}
+
 type BroadcasterEvent struct {
-	IsAnonymous    bool   `json:"is_anonymous"`
-	UserID         int    `json:"user_id"`
-	Username       string `json:"username"`
-	IsVerified     bool   `json:"is_verified"`
-	ProfilePicture string `json:"profile_picture"`
-	ChannelSlug    string `json:"channel_slug"`
+	IsAnonymous    bool          `json:"is_anonymous"`
+	UserID         int           `json:"user_id"`
+	Username       string        `json:"username"`
+	IsVerified     bool          `json:"is_verified"`
+	ProfilePicture string        `json:"profile_picture"`
+	ChannelSlug    string        `json:"channel_slug"`
+	Identity       IdentityEvent `json:"identity"`
 }
 
 type ChatMessageEmotesEvent struct {
