@@ -25,7 +25,7 @@ type IdentityEvent struct {
 	Badges        []Badge `json:"badges"`
 }
 
-type BroadcasterEvent struct {
+type UserEvent struct {
 	IsAnonymous    bool          `json:"is_anonymous"`
 	UserID         int           `json:"user_id"`
 	Username       string        `json:"username"`
@@ -45,44 +45,44 @@ type ChatMessageEmotesEvent struct {
 
 type ChatMessageEvent struct {
 	MessageID   string                   `json:"message_id"`
-	Broadcaster BroadcasterEvent         `json:"broadcaster"`
-	Sender      BroadcasterEvent         `json:"sender"`
+	Broadcaster UserEvent                `json:"broadcaster"`
+	Sender      UserEvent                `json:"sender"`
 	Content     string                   `json:"content"`
 	Emotes      []ChatMessageEmotesEvent `json:"emotes"`
 }
 
 type ChannelFollowEvent struct {
-	Broadcaster BroadcasterEvent `json:"broadcaster"`
-	Follower    BroadcasterEvent `json:"follower"`
+	Broadcaster UserEvent `json:"broadcaster"`
+	Follower    UserEvent `json:"follower"`
 }
 
 type ChannelSubscriptionRenewalEvent struct {
-	Broadcaster BroadcasterEvent `json:"broadcaster"`
-	Subscriber  BroadcasterEvent `json:"subscriber"`
-	Duration    int              `json:"duration"`
-	CreatedAt   string           `json:"created_at"`
+	Broadcaster UserEvent `json:"broadcaster"`
+	Subscriber  UserEvent `json:"subscriber"`
+	Duration    int       `json:"duration"`
+	CreatedAt   string    `json:"created_at"`
 }
 
 type ChannelSubscriptionGiftsEvent struct {
-	Broadcaster BroadcasterEvent   `json:"broadcaster"`
-	Gifter      BroadcasterEvent   `json:"gifter"`
-	Giftees     []BroadcasterEvent `json:"giftees"`
-	CreatedAt   string             `json:"created_at"`
+	Broadcaster UserEvent   `json:"broadcaster"`
+	Gifter      UserEvent   `json:"gifter"`
+	Giftees     []UserEvent `json:"giftees"`
+	CreatedAt   string      `json:"created_at"`
 }
 
 type ChannelSubscriptionCreatedEvent struct {
-	Broadcaster BroadcasterEvent `json:"broadcaster"`
-	Subscriber  BroadcasterEvent `json:"subscriber"`
-	Duration    int              `json:"duration"`
-	CreatedAt   string           `json:"created_at"`
+	Broadcaster UserEvent `json:"broadcaster"`
+	Subscriber  UserEvent `json:"subscriber"`
+	Duration    int       `json:"duration"`
+	CreatedAt   string    `json:"created_at"`
 }
 
 type LivestreamStatusUpdatedEvent struct {
-	Broadcaster BroadcasterEvent `json:"broadcaster"`
-	IsLive      bool             `json:"is_live"`
-	Title       string           `json:"title"`
-	StartedAt   string           `json:"started_at"`
-	EndedAt     string           `json:"ended_at"`
+	Broadcaster UserEvent `json:"broadcaster"`
+	IsLive      bool      `json:"is_live"`
+	Title       string    `json:"title"`
+	StartedAt   string    `json:"started_at"`
+	EndedAt     string    `json:"ended_at"`
 }
 
 // I set it as public to be able to change it in tests.
