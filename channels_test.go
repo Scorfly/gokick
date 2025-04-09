@@ -20,9 +20,13 @@ func TestNewChannelListFilterSuccess(t *testing.T) {
 			filter:              gokick.NewChannelListFilter(),
 			expectedQueryString: "",
 		},
-		"with query": {
+		"with broadcaster_user_id query": {
 			filter:              gokick.NewChannelListFilter().SetBroadcasterUserIDs([]int{118, 218}),
 			expectedQueryString: "?broadcaster_user_id=118&broadcaster_user_id=218",
+		},
+		"with slug query": {
+			filter:              gokick.NewChannelListFilter().SetSlug([]string{"slug_1", "slug_2"}),
+			expectedQueryString: "?slug=slug_1&slug=slug_2",
 		},
 	}
 

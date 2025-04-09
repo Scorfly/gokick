@@ -50,6 +50,14 @@ func (f ChannelListFilter) SetBroadcasterUserIDs(ids []int) ChannelListFilter {
 	return f
 }
 
+func (f ChannelListFilter) SetSlug(slugs []string) ChannelListFilter {
+	for i := range slugs {
+		f.queryParams.Add("slug", slugs[i])
+	}
+
+	return f
+}
+
 func (f ChannelListFilter) ToQueryString() string {
 	if len(f.queryParams) == 0 {
 		return ""
