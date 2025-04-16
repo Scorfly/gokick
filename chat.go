@@ -19,11 +19,13 @@ func (c *Client) SendChatMessage(
 	ctx context.Context,
 	broadcasterUserID int,
 	content string,
+	replyToMessageID *string,
 	messageType MessageType,
 ) (ChatResponseWrapper, error) {
 	type postBodyRequest struct {
 		BroadcasterUserID int    `json:"broadcaster_user_id"`
 		Content           string `json:"content"`
+		ReplyToMessageID  string `json:"reply_to_message_id"`
 		Type              string `json:"type"`
 	}
 
@@ -31,6 +33,10 @@ func (c *Client) SendChatMessage(
 		BroadcasterUserID: broadcasterUserID,
 		Content:           content,
 		Type:              messageType.String(),
+	}
+
+	if replyToMessageID != nil {
+		r.ReplyToMessageID = *replyToMessageID
 	}
 
 	body, err := json.Marshal(r)
