@@ -31,6 +31,7 @@ func TestNewSubscriptionNameSuccess(t *testing.T) {
 		"channel.subscription.gifts":   gokick.SubscriptionNameChannelSubscriptionGifts,
 		"channel.subscription.new":     gokick.SubscriptionNameChannelSubscriptionCreated,
 		"livestream.status.updated":    gokick.SubscriptionNameLivestreamStatusUpdated,
+		"livestream.metadata.updated":  gokick.SubscriptionNameLivestreamMetadataUpdated,
 	}
 
 	for name, value := range testCases {
