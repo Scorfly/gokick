@@ -27,6 +27,7 @@ linters:
     - rowserrcheck
     - staticcheck
     - testpackage
+    - testifylint
     - thelper
     - unconvert
     - unparam

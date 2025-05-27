@@ -70,3 +70,7 @@ func setupTimeoutMockAuthClient(t *testing.T) *gokick.Client {
 func stringPtr(s string) *string {
 	return &s
 }
+
+func intPtr(i int) *int {
+	return &i
+}
