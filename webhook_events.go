@@ -102,6 +102,17 @@ type LivestreamMetadataUpdatedEvent struct {
 	} `json:"metadata"`
 }
 
+type ModerationBannedEvent struct {
+	Broadcaster UserEvent `json:"broadcaster"`
+	Moderator   UserEvent `json:"moderator"`
+	BannedUser  UserEvent `json:"banned_user"`
+	Metadata    struct {
+		Reason    string `json:"reason"`
+		CreatedAt string `json:"created_at"`
+		ExpiresAt string `json:"expires_at"`
+	} `json:"reason"`
+}
+
 // I set it as public to be able to change it in tests.
 // It's not a good practice to do so, but it's the only way to do it for now.
 var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
@@ -251,5 +262,8 @@ var eventConstructors = map[SubscriptionName]map[string]eventConstructor{
 	},
 	SubscriptionNameLivestreamMetadataUpdated: {
 		"1": func() interface{} { return new(LivestreamMetadataUpdatedEvent) },
+	},
+	SubscriptionNameModerationBanned: {
+		"1": func() interface{} { return new(ModerationBannedEvent) },
 	},
 }

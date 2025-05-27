@@ -61,3 +61,4 @@
 - [x] Channel Subscription Created
 - [x] Livestream Status Updated
 - [x] Livestream Metadata Updated
+- [x] Moderation Banned
