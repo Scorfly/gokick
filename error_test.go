@@ -16,7 +16,7 @@ func TestNewError(t *testing.T) {
 		require.ErrorAs(t, err, &kickError)
 		assert.Equal(t, 401, kickError.Code())
 		assert.Equal(t, "not authorized", kickError.Message())
-		assert.Equal(t, "", kickError.Description())
+		assert.Empty(t, kickError.Description())
 		assert.EqualError(t, err, "Error 401: not authorized")
 	})
 

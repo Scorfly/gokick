@@ -24,6 +24,7 @@ var kickScopes = []string{
 	"channel:write",
 	"streamkey:read",
 	"events:subscribe",
+	"moderation:ban",
 }
 
 var ENDPOINT = struct {

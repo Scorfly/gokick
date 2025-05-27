@@ -173,7 +173,7 @@ func TestGetLivestreamsSuccess(t *testing.T) {
 		assert.Equal(t, "category name", LivestreamsResponse.Result[0].Category.Name)
 		assert.Equal(t, "category image url", LivestreamsResponse.Result[0].Category.Thumbnail)
 		assert.Equal(t, 198, LivestreamsResponse.Result[0].ChannelID)
-		assert.Equal(t, true, LivestreamsResponse.Result[0].HasMatureContent)
+		assert.True(t, LivestreamsResponse.Result[0].HasMatureContent)
 		assert.Equal(t, "fr", LivestreamsResponse.Result[0].Language)
 		assert.Equal(t, "slug", LivestreamsResponse.Result[0].Slug)
 		assert.Equal(t, "started_at", LivestreamsResponse.Result[0].StartedAt)
