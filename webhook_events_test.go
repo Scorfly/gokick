@@ -247,6 +247,11 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 				version:      "1",
 				expectedType: &gokick.LivestreamMetadataUpdatedEvent{},
 			},
+			"with new banned user updated version 1": {
+				subscription: gokick.SubscriptionNameModerationBanned,
+				version:      "1",
+				expectedType: &gokick.ModerationBannedEvent{},
+			},
 		}
 
 		for name, testCase := range testCases {
