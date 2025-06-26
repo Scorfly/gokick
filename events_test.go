@@ -153,13 +153,13 @@ func TestCreateSubscriptionsError(t *testing.T) {
 
 	t.Run("unmarshal token response", func(t *testing.T) {
 		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusCreated)
 			fmt.Fprint(w, "117")
 		})
 
 		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
 
-		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 200 and body "117"): json: cannot unmarshal `+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 201 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.errorResponse`)
 	})
 
@@ -192,7 +192,7 @@ func TestCreateSubscriptionsError(t *testing.T) {
 
 func TestCreateSubscriptionsSuccess(t *testing.T) {
 	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{
 			"message":"success",
 			"data":[{"error": "error","name": "name","subscription_id": "subscription id","version": 1}]
