@@ -1,6 +1,7 @@
 package gokick
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -158,6 +159,38 @@ func GetEventFromRequest(request *http.Request) (interface{}, error) {
 		timestamp,
 		string(body),
 	)
+}
+
+func ValidateEvent(
+	header http.Header,
+	body []byte,
+) bool {
+	if !SkipSignatureValidation {
+		payload := struct {
+			signature string
+			messageID string
+			timestamp string
+		}{
+			signature: header.Get("Kick-Event-Signature"),
+			messageID: header.Get("Kick-Event-Message-Id"),
+			timestamp: header.Get("Kick-Event-Message-Timestamp"),
+		}
+
+		signature := bytes.Join([][]byte{
+			[]byte(payload.messageID),
+			[]byte(payload.timestamp),
+			body,
+		}, []byte("."))
+
+		publicKey, _ := parsePublicKey([]byte(DefaultEventPublicKey))
+
+		err := verifyEventValidity(&publicKey, signature, []byte(payload.signature))
+		if err != nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 func ValidateAndParseEvent(
