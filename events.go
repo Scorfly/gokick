@@ -93,7 +93,7 @@ func (c *Client) CreateSubscriptions(
 		c,
 		http.MethodPost,
 		"/public/v1/events/subscriptions",
-		http.StatusCreated,
+		http.StatusOK,
 		bytes.NewReader(body),
 	)
 	if err != nil {
