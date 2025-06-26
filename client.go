@@ -125,6 +125,10 @@ func (c *Client) refreshToken(ctx context.Context) error {
 	return nil
 }
 
+type contextKey string
+
+const retryKey contextKey = "retry"
+
 func (c *Client) do(req *http.Request) (*http.Response, error) {
 	for {
 		c.setRequestHeaders(req)
@@ -135,7 +139,14 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 		}
 
 		if response.StatusCode == http.StatusUnauthorized && c.canRefreshUserToken() {
-			err := c.refreshToken(req.Context())
+			ctx := req.Context()
+			if ctx.Value(retryKey) == nil {
+				ctx = context.WithValue(ctx, retryKey, true)
+			} else {
+				return response, nil
+			}
+
+			err := c.refreshToken(ctx)
 			if err != nil {
 				return nil, err
 			}
