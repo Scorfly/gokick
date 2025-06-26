@@ -61,6 +61,37 @@ func TestGetEventFromRequestSuccess(t *testing.T) {
 	assert.IsType(t, &gokick.ChatMessageEvent{}, event)
 }
 
+func TestValidateEventError(t *testing.T) {
+	previousKey := gokick.DefaultEventPublicKey
+	t.Cleanup(func() { gokick.DefaultEventPublicKey = previousKey })
+
+	gokick.DefaultEventPublicKey = "invalid key"
+
+	headers := http.Header{}
+	headers.Set("Kick-Event-Message-Id", "msg123")
+
+	valid := gokick.ValidateEvent(headers, []byte("body"))
+	assert.False(t, valid)
+}
+
+func TestValidateEventSuccess(t *testing.T) {
+	skipSignatureValidation(t)
+
+	headers := http.Header{}
+	headers.Set("Kick-Event-Message-Id", "msg123")
+
+	valid := gokick.ValidateEvent(
+		headers,
+		[]byte(`{"message_id":"bb9832e4-e865-48f4-a0c3-392f78bf3b1a","broadcaster":{"is_anonymous":false,"user_id":721956,`+
+			`"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/profile_image/`+
+			`conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},"sender":{"is_anonymous":false,`+
+			`"user_id":721956,"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/`+
+			`profile_image/conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},`+
+			`"content":"coucou","emotes":null}`),
+	)
+	assert.True(t, valid)
+}
+
 func TestValidateAndParseEventError(t *testing.T) {
 	t.Run("failed to decode public key", func(t *testing.T) {
 		previousKey := gokick.DefaultEventPublicKey
