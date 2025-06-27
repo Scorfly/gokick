@@ -50,15 +50,20 @@ func (c *Client) GetSubscriptions(ctx context.Context) (EventsResponseWrapper, e
 	return EventsResponseWrapper(response), nil
 }
 
-type SubscriptionRequest struct {
+type SubscriptionRequestEvent struct {
 	Name    SubscriptionName `json:"name"`
 	Version int              `json:"version"`
 }
 
+type SubscriptionRequest struct {
+	Method            SubscriptionMethod         `json:"method"`
+	BroadcasterUserID int                        `json:"broadcaster_user_id,omitempty"`
+	Events            []SubscriptionRequestEvent `json:"events"`
+}
+
 func (c *Client) CreateSubscriptions(
 	ctx context.Context,
-	method SubscriptionMethod,
-	subscriptions []SubscriptionRequest,
+  req SubscriptionRequest,
 ) (CreateSubscriptionsResponseWrapper, error) {
 	type postBodyRequestSubscription struct {
 		Name    string `json:"name"`
@@ -66,21 +71,23 @@ func (c *Client) CreateSubscriptions(
 	}
 
 	type postBodyRequest struct {
-		Method string                        `json:"method"`
-		Events []postBodyRequestSubscription `json:"events"`
+		Method            string                        `json:"method"`
+		BroadcasterUserID int                           `json:"broadcaster_user_id,omitempty"`
+		Events            []postBodyRequestSubscription `json:"events"`
 	}
 
-	events := make([]postBodyRequestSubscription, len(subscriptions))
-	for i := range subscriptions {
+	events := make([]postBodyRequestSubscription, len(req.Events))
+	for i := range req.Events {
 		events[i] = postBodyRequestSubscription{
-			Name:    subscriptions[i].Name.String(),
-			Version: subscriptions[i].Version,
+			Name:    req.Events[i].Name.String(),
+			Version: req.Events[i].Version,
 		}
 	}
 
 	r := postBodyRequest{
-		Method: method.String(),
-		Events: events,
+		Method:            req.Method.String(),
+		BroadcasterUserID: req.BroadcasterUserID,
+		Events:            events,
 	}
 
 	body, err := json.Marshal(r)
