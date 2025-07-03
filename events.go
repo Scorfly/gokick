@@ -59,6 +59,7 @@ func (c *Client) CreateSubscriptions(
 	ctx context.Context,
 	method SubscriptionMethod,
 	subscriptions []SubscriptionRequest,
+	broadcasterUserID *int,
 ) (CreateSubscriptionsResponseWrapper, error) {
 	type postBodyRequestSubscription struct {
 		Name    string `json:"name"`
@@ -66,8 +67,9 @@ func (c *Client) CreateSubscriptions(
 	}
 
 	type postBodyRequest struct {
-		Method string                        `json:"method"`
-		Events []postBodyRequestSubscription `json:"events"`
+		Method            string                        `json:"method"`
+		Events            []postBodyRequestSubscription `json:"events"`
+		BroadcasterUserID int                           `json:"broadcaster_user_id,omitempty"`
 	}
 
 	events := make([]postBodyRequestSubscription, len(subscriptions))
@@ -81,6 +83,10 @@ func (c *Client) CreateSubscriptions(
 	r := postBodyRequest{
 		Method: method.String(),
 		Events: events,
+	}
+
+	if broadcasterUserID != nil {
+		r.BroadcasterUserID = *broadcasterUserID
 	}
 
 	body, err := json.Marshal(r)
