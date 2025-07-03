@@ -105,7 +105,7 @@ func (c *Client) setRequestHeaders(req *http.Request) {
 	}
 
 	if token != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 }
 
