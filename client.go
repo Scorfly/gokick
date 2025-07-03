@@ -165,11 +165,11 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 				return nil, err
 			}
 
-      if bodyReader != nil {
-        if _, err := bodyReader.Seek(0, io.SeekStart); err != nil {
-          return nil, fmt.Errorf("failed to reset request body: %w", err)
-        }
-      }
+			if bodyReader != nil {
+				if _, err := bodyReader.Seek(0, io.SeekStart); err != nil {
+					return nil, fmt.Errorf("failed to reset request body: %w", err)
+				}
+			}
 
 			continue
 		}
