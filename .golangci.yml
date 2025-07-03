@@ -63,6 +63,9 @@ linters:
     revive:
       confidence: 0.8
       severity: warning
+    staticcheck:
+      checks:
+        - all
   exclusions:
     generated: lax
     presets:

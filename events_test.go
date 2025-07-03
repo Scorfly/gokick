@@ -3,6 +3,7 @@ package gokick_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
@@ -127,14 +128,14 @@ func TestCreateSubscriptionsError(t *testing.T) {
 		require.NoError(t, err)
 
 		var ctx context.Context
-		_, err = kickClient.CreateSubscriptions(ctx, gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err = kickClient.CreateSubscriptions(ctx, gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 		require.EqualError(t, err, "failed to create request: net/http: nil Context")
 	})
 
 	t.Run("timeout", func(t *testing.T) {
 		kickClient := setupTimeoutMockClient(t)
 
-		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/events/subscriptions": context deadline `+
 			`exceeded (Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -145,7 +146,7 @@ func TestCreateSubscriptionsError(t *testing.T) {
 			fmt.Fprint(w, `117`)
 		})
 
-		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.errorResponse`)
@@ -157,7 +158,7 @@ func TestCreateSubscriptionsError(t *testing.T) {
 			fmt.Fprint(w, "117")
 		})
 
-		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 201 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.errorResponse`)
@@ -170,7 +171,7 @@ func TestCreateSubscriptionsError(t *testing.T) {
 			fmt.Fprint(w, "")
 		})
 
-		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 
 		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
 	})
@@ -181,7 +182,7 @@ func TestCreateSubscriptionsError(t *testing.T) {
 			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
 		})
 
-		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{})
+		_, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{}, nil)
 
 		var kickError gokick.Error
 		require.ErrorAs(t, err, &kickError)
@@ -191,43 +192,111 @@ func TestCreateSubscriptionsError(t *testing.T) {
 }
 
 func TestCreateSubscriptionsSuccess(t *testing.T) {
-	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{
-			"message":"success",
-			"data":[{"error": "error","name": "name","subscription_id": "subscription id","version": 1}]
-		}`)
+	t.Run("without broadcaster user ID", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			defer r.Body.Close()
+
+			assert.JSONEq(
+				t,
+				`{"method":"webhook","events":[{"name":"chat.message.sent","version":1},{"name":"channel.followed","version":1},`+
+					`{"name":"channel.subscription.renewal","version":1},{"name":"channel.subscription.gifts","version":1},`+
+					`{"name":"channel.subscription.new","version":1}]}`,
+				string(body),
+			)
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+					"message":"success",
+					"data":[{"error": "error","name": "name","subscription_id": "subscription id","version": 1}]
+				}`)
+		})
+
+		response, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{
+			{
+				Name:    gokick.SubscriptionNameChatMessage,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelFollow,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionRenewal,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionGifts,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionCreated,
+				Version: 1,
+			},
+		}, nil)
+
+		require.NoError(t, err)
+		assert.Len(t, response.Result, 1)
+		assert.Equal(t, "error", response.Result[0].Error)
+		assert.Equal(t, "name", response.Result[0].Name)
+		assert.Equal(t, "subscription id", response.Result[0].SubscriptionID)
+		assert.Equal(t, 1, response.Result[0].Version)
 	})
 
-	response, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{
-		{
-			Name:    gokick.SubscriptionNameChatMessage,
-			Version: 1,
-		},
-		{
-			Name:    gokick.SubscriptionNameChannelFollow,
-			Version: 1,
-		},
-		{
-			Name:    gokick.SubscriptionNameChannelSubscriptionRenewal,
-			Version: 1,
-		},
-		{
-			Name:    gokick.SubscriptionNameChannelSubscriptionGifts,
-			Version: 1,
-		},
-		{
-			Name:    gokick.SubscriptionNameChannelSubscriptionCreated,
-			Version: 1,
-		},
-	})
+	t.Run("with broadcaster user ID", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			assert.NoError(t, err)
+			defer r.Body.Close()
 
-	require.NoError(t, err)
-	assert.Len(t, response.Result, 1)
-	assert.Equal(t, "error", response.Result[0].Error)
-	assert.Equal(t, "name", response.Result[0].Name)
-	assert.Equal(t, "subscription id", response.Result[0].SubscriptionID)
-	assert.Equal(t, 1, response.Result[0].Version)
+			assert.JSONEq(
+				t,
+				`{"method":"webhook","events":[{"name":"chat.message.sent","version":1},{"name":"channel.followed","version":1},`+
+					`{"name":"channel.subscription.renewal","version":1},{"name":"channel.subscription.gifts","version":1},`+
+					`{"name":"channel.subscription.new","version":1}],"broadcaster_user_id":1234}`,
+				string(body),
+			)
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+					"message":"success",
+					"data":[{"error": "error","name": "name","subscription_id": "subscription id","version": 1}]
+				}`)
+		})
+
+		broadcasterUserID := 1234
+
+		response, err := kickClient.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, []gokick.SubscriptionRequest{
+			{
+				Name:    gokick.SubscriptionNameChatMessage,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelFollow,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionRenewal,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionGifts,
+				Version: 1,
+			},
+			{
+				Name:    gokick.SubscriptionNameChannelSubscriptionCreated,
+				Version: 1,
+			},
+		}, &broadcasterUserID)
+
+		require.NoError(t, err)
+		assert.Len(t, response.Result, 1)
+		assert.Equal(t, "error", response.Result[0].Error)
+		assert.Equal(t, "name", response.Result[0].Name)
+		assert.Equal(t, "subscription id", response.Result[0].SubscriptionID)
+		assert.Equal(t, 1, response.Result[0].Version)
+	})
 }
 
 func TestNewSubscriptionToDeleteFilterSuccess(t *testing.T) {
