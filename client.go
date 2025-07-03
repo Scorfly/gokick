@@ -166,7 +166,8 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 			}
 
 			if bodyReader != nil {
-				if _, err := bodyReader.Seek(0, io.SeekStart); err != nil {
+				_, err := bodyReader.Seek(0, io.SeekStart)
+				if err != nil {
 					return nil, fmt.Errorf("failed to reset request body: %w", err)
 				}
 			}
