@@ -120,7 +120,9 @@ func oauthKickCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	var stateData struct {
 		CodeVerifier string `json:"codeVerifier"`
 	}
-	if err := json.Unmarshal(stateBytes, &stateData); err != nil {
+
+	err = json.Unmarshal(stateBytes, &stateData)
+	if err != nil {
 		http.Error(w, "Invalid state data", http.StatusBadRequest)
 		return
 	}

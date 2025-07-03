@@ -21,6 +21,7 @@ linters:
     - lll
     - misspell
     - nakedret
+    - noinlineerr
     - nolintlint
     - prealloc
     - revive
