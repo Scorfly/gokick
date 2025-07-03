@@ -1,8 +1,10 @@
 package gokick
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 )
@@ -130,6 +132,18 @@ type contextKey string
 const retryKey contextKey = "retry"
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
+	var bodyReader *bytes.Reader
+	if req.Body != nil {
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+		req.Body.Close()
+
+		bodyReader = bytes.NewReader(bodyBytes)
+		req.Body = io.NopCloser(bodyReader)
+	}
+
 	for {
 		c.setRequestHeaders(req)
 
@@ -150,6 +164,12 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 			if err != nil {
 				return nil, err
 			}
+
+      if bodyReader != nil {
+        if _, err := bodyReader.Seek(0, io.SeekStart); err != nil {
+          return nil, fmt.Errorf("failed to reset request body: %w", err)
+        }
+      }
 
 			continue
 		}
