@@ -31,6 +31,11 @@ func (f CategoryListFilter) SetQuery(query string) CategoryListFilter {
 	return f
 }
 
+func (f CategoryListFilter) SetPage(page int) CategoryListFilter {
+	f.queryParams.Set("page", fmt.Sprintf("%d", page))
+	return f
+}
+
 func (f CategoryListFilter) ToQueryString() string {
 	if len(f.queryParams) == 0 {
 		return ""

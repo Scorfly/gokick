@@ -24,6 +24,14 @@ func TestNewCategoryListFilterSuccess(t *testing.T) {
 			filter:              gokick.NewCategoryListFilter().SetQuery("test"),
 			expectedQueryString: "?q=test",
 		},
+		"with page": {
+			filter:              gokick.NewCategoryListFilter().SetPage(3),
+			expectedQueryString: "?page=3",
+		},
+		"with query and page": {
+			filter:              gokick.NewCategoryListFilter().SetQuery("test").SetPage(3),
+			expectedQueryString: "?page=3&q=test",
+		},
 	}
 
 	for name, tc := range testCases {
