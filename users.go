@@ -21,10 +21,11 @@ type UserResponse struct {
 }
 
 type TokenIntrospectResponse struct {
-	Active   bool   `json:"active"`
-	ClientID string `json:"client_id"`
-	Exp      int    `json:"exp"`
-	Scope    string `json:"scope"`
+	Active    bool   `json:"active"`
+	ClientID  string `json:"client_id"`
+	Exp       int    `json:"exp"`
+	Scope     string `json:"scope"`
+	TokenType string `json:"token_type"`
 }
 
 type UserListFilter struct {
@@ -37,6 +38,14 @@ func NewUserListFilter() UserListFilter {
 
 func (f UserListFilter) SetID(id int) UserListFilter {
 	f.queryParams.Set("id", fmt.Sprintf("%d", id))
+	return f
+}
+
+func (f UserListFilter) SetIDs(ids []int) UserListFilter {
+	for i := range ids {
+		f.queryParams.Add("id", fmt.Sprintf("%d", ids[i]))
+	}
+
 	return f
 }
 

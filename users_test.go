@@ -24,6 +24,10 @@ func TestNewUserListFilterSuccess(t *testing.T) {
 			filter:              gokick.NewUserListFilter().SetID(117),
 			expectedQueryString: "?id=117",
 		},
+		"with many IDs": {
+			filter:              gokick.NewUserListFilter().SetIDs([]int{118, 218}),
+			expectedQueryString: "?id=118&id=218",
+		},
 	}
 
 	for name, tc := range testCases {
@@ -107,7 +111,7 @@ func TestTokenIntrospectSuccess(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{
 			"message":"success",
-			"data":{"active": true, "client_id": "ClientID", "exp": 1, "scope": "Scope"}
+			"data":{"active": true, "client_id": "ClientID", "exp": 1, "scope": "Scope", "token_type":"TokenType"}
 		}`)
 	})
 
@@ -117,6 +121,7 @@ func TestTokenIntrospectSuccess(t *testing.T) {
 	assert.Equal(t, "ClientID", tokenResponse.Result.ClientID)
 	assert.Equal(t, 1, tokenResponse.Result.Exp)
 	assert.Equal(t, "Scope", tokenResponse.Result.Scope)
+	assert.Equal(t, "TokenType", tokenResponse.Result.TokenType)
 }
 
 func TestGetUsersError(t *testing.T) {
