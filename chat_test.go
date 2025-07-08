@@ -17,14 +17,14 @@ func TestSendChatMessageError(t *testing.T) {
 		require.NoError(t, err)
 
 		var ctx context.Context
-		_, err = kickClient.SendChatMessage(ctx, 1234, "message", nil, gokick.MessageTypeBot)
+		_, err = kickClient.SendChatMessage(ctx, nil, "message", nil, gokick.MessageTypeBot)
 		require.EqualError(t, err, "failed to create request: net/http: nil Context")
 	})
 
 	t.Run("timeout", func(t *testing.T) {
 		kickClient := setupTimeoutMockClient(t)
 
-		_, err := kickClient.SendChatMessage(context.Background(), 1234, "message", nil, gokick.MessageTypeBot)
+		_, err := kickClient.SendChatMessage(context.Background(), nil, "message", nil, gokick.MessageTypeBot)
 		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/chat": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
@@ -35,7 +35,7 @@ func TestSendChatMessageError(t *testing.T) {
 			fmt.Fprint(w, `117`)
 		})
 
-		_, err := kickClient.SendChatMessage(context.Background(), 1234, "message", nil, gokick.MessageTypeBot)
+		_, err := kickClient.SendChatMessage(context.Background(), nil, "message", nil, gokick.MessageTypeBot)
 
 		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.errorResponse`)
@@ -47,7 +47,7 @@ func TestSendChatMessageError(t *testing.T) {
 			fmt.Fprint(w, "117")
 		})
 
-		_, err := kickClient.SendChatMessage(context.Background(), 1234, "message", nil, gokick.MessageTypeBot)
+		_, err := kickClient.SendChatMessage(context.Background(), nil, "message", nil, gokick.MessageTypeBot)
 
 		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
 			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.ChatResponse]`)
@@ -60,7 +60,7 @@ func TestSendChatMessageError(t *testing.T) {
 			fmt.Fprint(w, "")
 		})
 
-		_, err := kickClient.SendChatMessage(context.Background(), 1234, "message", nil, gokick.MessageTypeBot)
+		_, err := kickClient.SendChatMessage(context.Background(), nil, "message", nil, gokick.MessageTypeBot)
 
 		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
 	})
@@ -71,7 +71,7 @@ func TestSendChatMessageError(t *testing.T) {
 			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
 		})
 
-		_, err := kickClient.SendChatMessage(context.Background(), 1234, "message", nil, gokick.MessageTypeBot)
+		_, err := kickClient.SendChatMessage(context.Background(), nil, "message", nil, gokick.MessageTypeBot)
 
 		var kickError gokick.Error
 		require.ErrorAs(t, err, &kickError)
@@ -82,14 +82,20 @@ func TestSendChatMessageError(t *testing.T) {
 
 func TestSendChatMessageSuccess(t *testing.T) {
 	testCases := map[string]struct {
+		broadcasterUserID   *int
 		replyToMessageID    *string
 		expectedQueryString string
 	}{
-		"without reply to message ID": {
-			replyToMessageID: nil,
-		},
+		"without optional params": {},
 		"with reply to message ID": {
 			replyToMessageID: stringPtr("message-id"),
+		},
+		"with broadcaster user ID": {
+			broadcasterUserID: intPtr(12345),
+		},
+		"with all optional params": {
+			replyToMessageID:  stringPtr("message-id"),
+			broadcasterUserID: intPtr(12345),
 		},
 	}
 
@@ -103,7 +109,13 @@ func TestSendChatMessageSuccess(t *testing.T) {
 				}`)
 			})
 
-			resonse, err := kickClient.SendChatMessage(context.Background(), 1234, "message", tc.replyToMessageID, gokick.MessageTypeBot)
+			resonse, err := kickClient.SendChatMessage(
+				context.Background(),
+				tc.broadcasterUserID,
+				"message",
+				tc.replyToMessageID,
+				gokick.MessageTypeBot,
+			)
 			require.NoError(t, err)
 			assert.True(t, resonse.Result.IsSent)
 			assert.Equal(t, "message id", resonse.Result.MessageID)
