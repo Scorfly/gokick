@@ -21,6 +21,7 @@ type StreamResponse struct {
 	IsMature    bool   `json:"is_mature"`
 	Language    string `json:"language"`
 	StartTime   string `json:"start_time"`
+	Thumbnail   string `json:"thumbnail"`
 	ViewerCount int    `json:"viewer_count"`
 }
 
