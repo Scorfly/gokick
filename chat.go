@@ -17,26 +17,29 @@ type ChatResponse struct {
 
 func (c *Client) SendChatMessage(
 	ctx context.Context,
-	broadcasterUserID int,
+	broadcasterUserID *int,
 	content string,
 	replyToMessageID *string,
 	messageType MessageType,
 ) (ChatResponseWrapper, error) {
 	type postBodyRequest struct {
-		BroadcasterUserID int    `json:"broadcaster_user_id"`
+		BroadcasterUserID int    `json:"broadcaster_user_id,omitempty"`
 		Content           string `json:"content"`
-		ReplyToMessageID  string `json:"reply_to_message_id"`
+		ReplyToMessageID  string `json:"reply_to_message_id,omitempty"`
 		Type              string `json:"type"`
 	}
 
 	r := postBodyRequest{
-		BroadcasterUserID: broadcasterUserID,
-		Content:           content,
-		Type:              messageType.String(),
+		Content: content,
+		Type:    messageType.String(),
 	}
 
 	if replyToMessageID != nil {
 		r.ReplyToMessageID = *replyToMessageID
+	}
+
+	if broadcasterUserID != nil {
+		r.BroadcasterUserID = *broadcasterUserID
 	}
 
 	body, err := json.Marshal(r)
