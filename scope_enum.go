@@ -11,6 +11,7 @@ const (
 	ScopeChatWrite                   // chat:write
 	ScopeStremkeyRead                // streamkey:read
 	ScopeEventSubscribe              // events:subscribe
+	ScopeModerationBan               // moderation:ban
 )
 
 func NewScope(scope string) (Scope, error) {
@@ -27,6 +28,8 @@ func NewScope(scope string) (Scope, error) {
 		return ScopeStremkeyRead, nil
 	case "events:subscribe":
 		return ScopeEventSubscribe, nil
+	case "moderation:ban":
+		return ScopeModerationBan, nil
 	default:
 		return 0, fmt.Errorf("unknown scope: %s", scope)
 	}
@@ -46,6 +49,8 @@ func (s Scope) String() string {
 		return "streamkey:read"
 	case ScopeEventSubscribe:
 		return "events:subscribe"
+	case ScopeModerationBan:
+		return "moderation:ban"
 	default:
 		return "unknown"
 	}
