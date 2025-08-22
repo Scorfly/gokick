@@ -14,8 +14,6 @@ updates:
       - dependencies
     allow:
       - dependency-type: "direct"
-    reviewers:
-      - "Scorfly"
       
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -28,5 +26,3 @@ updates:
       prefix: "chore"
     labels:
       - dependencies
-    reviewers:
-      - "Scorfly"
