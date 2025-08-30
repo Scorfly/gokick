@@ -30,8 +30,8 @@ jobs:
     - name: Test
       run: go test -v -covermode=count -coverprofile=coverage.out
 
-    - name: Send coverage
-      env:
-        COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
-      run: |
-        goveralls -coverprofile=coverage.out -service=github
+    - name: Upload to Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.COVERALLS_TOKEN }}
+        path-to-lcov: coverage.out
