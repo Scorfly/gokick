@@ -8,8 +8,9 @@ import (
 )
 
 type (
-	LivestreamsResponseWrapper Response[[]LivestreamResponse]
-	LivestreamResponseWrapper  Response[LivestreamResponse]
+	LivestreamsResponseWrapper     Response[[]LivestreamResponse]
+	LivestreamResponseWrapper      Response[LivestreamResponse]
+	LivestreamStatsResponseWrapper Response[LivestreamStatsResponse]
 )
 
 type LivestreamResponse struct {
@@ -21,7 +22,20 @@ type LivestreamResponse struct {
 	Slug              string           `json:"slug"`
 	StartedAt         string           `json:"started_at"`
 	StreamTitle       string           `json:"stream_title"`
-	ThumbnailURL      string           `json:"thumbnail_url"`
+	Thumbnail         string           `json:"thumbnail"`
+	ViewerCount       int              `json:"viewer_count"`
+}
+
+type LivestreamStatsResponse struct {
+	BroadcasterUserID int              `json:"broadcaster_user_id"`
+	Category          CategoryResponse `json:"category"`
+	ChannelID         int              `json:"channel_id"`
+	HasMatureContent  bool             `json:"has_mature_content"`
+	Language          string           `json:"language"`
+	Slug              string           `json:"slug"`
+	StartedAt         string           `json:"started_at"`
+	StreamTitle       string           `json:"stream_title"`
+	Thumbnail         string           `json:"thumbnail"`
 	ViewerCount       int              `json:"viewer_count"`
 }
 
@@ -85,4 +99,20 @@ func (c *Client) GetLivestreams(ctx context.Context, filter LivestreamListFilter
 	}
 
 	return LivestreamsResponseWrapper(response), nil
+}
+
+func (c *Client) GetLivestreamsStats(ctx context.Context) (LivestreamStatsResponseWrapper, error) {
+	response, err := makeRequest[LivestreamStatsResponse](
+		ctx,
+		c,
+		http.MethodGet,
+		"/public/v1/livestreams/stats",
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return LivestreamStatsResponseWrapper{}, err
+	}
+
+	return LivestreamStatsResponseWrapper(response), nil
 }
