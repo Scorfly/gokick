@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetEventFromRequestError(t *testing.T) {
-	t.Run("reqest not set", func(t *testing.T) {
+	t.Run("request not set", func(t *testing.T) {
 		_, err := gokick.GetEventFromRequest(nil)
 		require.EqualError(t, err, "request cannot be nil")
 	})

@@ -45,11 +45,17 @@ type ChatMessageEmotesEvent struct {
 }
 
 type ChatMessageEvent struct {
-	MessageID   string                   `json:"message_id"`
+	MessageID string `json:"message_id"`
+	RepliesTo struct {
+		MessageID string    `json:"message_id"`
+		Sender    UserEvent `json:"sender"`
+		Content   string    `json:"content"`
+	} `json:"replies_to"`
 	Broadcaster UserEvent                `json:"broadcaster"`
 	Sender      UserEvent                `json:"sender"`
 	Content     string                   `json:"content"`
 	Emotes      []ChatMessageEmotesEvent `json:"emotes"`
+	CreatedAt   string                   `json:"created_at"`
 }
 
 type ChannelFollowEvent struct {
