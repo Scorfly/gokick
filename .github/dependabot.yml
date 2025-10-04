@@ -9,8 +9,6 @@ updates:
       prefix: "chore"
     labels:
       - dependencies
-    registries:
-      - "company-github"
     allow:
       - dependency-type: "direct"
     groups:
