@@ -32,6 +32,7 @@ func TestNewScopeSuccess(t *testing.T) {
 		"streamkey:read":   gokick.ScopeStremkeyRead,
 		"events:subscribe": gokick.ScopeEventSubscribe,
 		"moderation:ban":   gokick.ScopeModerationBan,
+		"kicks:read":       gokick.ScopeKicksRead,
 	}
 
 	for name, value := range testCases {
