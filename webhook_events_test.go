@@ -215,6 +215,62 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 		assert.Nil(t, event.(*gokick.ChatMessageEvent).Emotes)
 	})
 
+	t.Run("with new kicks gifted event detailed", func(t *testing.T) {
+		skipSignatureValidation(t)
+
+		event, err := gokick.ValidateAndParseEvent(
+			gokick.SubscriptionNameKicksGifted,
+			"1",
+			"signature",
+			"message ID",
+			"2025-10-20T04:00:08.634Z",
+			`{
+				"broadcaster": {
+					"user_id": 123456789,
+					"username": "broadcaster_name",
+					"is_verified": true,
+					"profile_picture": "https://example.com/broadcaster_avatar.jpg",
+					"channel_slug": "broadcaster_channel"
+				},
+				"sender": {
+					"user_id": 987654321,
+					"username": "gift_sender",
+					"is_verified": false,
+					"profile_picture": "https://example.com/sender_avatar.jpg",
+					"channel_slug": "gift_sender_channel"
+				},
+				"gift": {
+					"amount": 100,
+					"name": "Full Send",
+					"type": "BASIC",
+					"tier": "BASIC",
+					"message": "w"
+				},
+				"created_at": "2025-10-20T04:00:08.634Z"
+			}`,
+		)
+		require.NoError(t, err)
+		assert.IsType(t, &gokick.KicksGiftedEvent{}, event)
+
+		kicksEvent := event.(*gokick.KicksGiftedEvent)
+		assert.Equal(t, 123456789, kicksEvent.Broadcaster.UserID)
+		assert.Equal(t, "broadcaster_name", kicksEvent.Broadcaster.Username)
+		assert.True(t, kicksEvent.Broadcaster.IsVerified)
+		assert.Equal(t, "broadcaster_channel", kicksEvent.Broadcaster.ChannelSlug)
+
+		assert.Equal(t, 987654321, kicksEvent.Sender.UserID)
+		assert.Equal(t, "gift_sender", kicksEvent.Sender.Username)
+		assert.False(t, kicksEvent.Sender.IsVerified)
+		assert.Equal(t, "gift_sender_channel", kicksEvent.Sender.ChannelSlug)
+
+		assert.Equal(t, 100, kicksEvent.Gift.Amount)
+		assert.Equal(t, "Full Send", kicksEvent.Gift.Name)
+		assert.Equal(t, "BASIC", kicksEvent.Gift.Type)
+		assert.Equal(t, "BASIC", kicksEvent.Gift.Tier)
+		assert.Equal(t, "w", kicksEvent.Gift.Message)
+		assert.Equal(t, "2025-10-20T04:00:08.634Z", kicksEvent.CreatedAt)
+	})
+
 	t.Run("with new chat message event details with unexisting version", func(t *testing.T) {
 		skipSignatureValidation(t)
 
@@ -282,6 +338,11 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 				subscription: gokick.SubscriptionNameModerationBanned,
 				version:      "1",
 				expectedType: &gokick.ModerationBannedEvent{},
+			},
+			"with new kicks gifted version 1": {
+				subscription: gokick.SubscriptionNameKicksGifted,
+				version:      "1",
+				expectedType: &gokick.KicksGiftedEvent{},
 			},
 		}
 
