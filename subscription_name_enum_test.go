@@ -33,6 +33,7 @@ func TestNewSubscriptionNameSuccess(t *testing.T) {
 		"livestream.status.updated":    gokick.SubscriptionNameLivestreamStatusUpdated,
 		"livestream.metadata.updated":  gokick.SubscriptionNameLivestreamMetadataUpdated,
 		"moderation.banned":            gokick.SubscriptionNameModerationBanned,
+		"kicks.gifted":                 gokick.SubscriptionNameKicksGifted,
 	}
 
 	for name, value := range testCases {
