@@ -133,7 +133,8 @@ func TestGetChannelsSuccess(t *testing.T) {
 				"slug": "slug",
 				"stream": {
 					"key": "stream key",
-					"url": "stream URL"
+					"url": "stream URL",
+					"custom_tags": ["tag1", "tag2"]
 				},
 				"stream_title": "stream title"
 			}]}`)
@@ -151,6 +152,7 @@ func TestGetChannelsSuccess(t *testing.T) {
 		assert.Equal(t, "slug", channelsResponse.Result[0].Slug)
 		assert.Equal(t, "stream key", channelsResponse.Result[0].Stream.Key)
 		assert.Equal(t, "stream URL", channelsResponse.Result[0].Stream.URL)
+		assert.Equal(t, []string{"tag1", "tag2"}, channelsResponse.Result[0].Stream.CustomTags)
 		assert.Equal(t, "stream title", channelsResponse.Result[0].StreamTitle)
 	})
 }

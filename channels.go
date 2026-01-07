@@ -15,14 +15,15 @@ type (
 )
 
 type StreamResponse struct {
-	Key         string `json:"key"`
-	URL         string `json:"url"`
-	IsLive      bool   `json:"is_live"`
-	IsMature    bool   `json:"is_mature"`
-	Language    string `json:"language"`
-	StartTime   string `json:"start_time"`
-	Thumbnail   string `json:"thumbnail"`
-	ViewerCount int    `json:"viewer_count"`
+	CustomTags  []string `json:"custom_tags"`
+	Key         string   `json:"key"`
+	URL         string   `json:"url"`
+	IsLive      bool     `json:"is_live"`
+	IsMature    bool     `json:"is_mature"`
+	Language    string   `json:"language"`
+	StartTime   string   `json:"start_time"`
+	Thumbnail   string   `json:"thumbnail"`
+	ViewerCount int      `json:"viewer_count"`
 }
 
 type ChannelResponse struct {
