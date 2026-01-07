@@ -33,6 +33,30 @@ output
 
 	spew.Dump("users", users)
 ```
+
+### Get Users by ID
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	users, _ := client.GetUsers(context.Background(), gokick.NewUserListFilter().SetID(123456))
+
+	spew.Dump("users", users)
+```
+
+### Get Users by multiple IDs
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	users, _ := client.GetUsers(context.Background(), gokick.NewUserListFilter().SetIDs([]int{123456, 789012}))
+
+	spew.Dump("users", users)
+```
 output
 ```
 (string) (len=5) "users"

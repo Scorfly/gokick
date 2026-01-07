@@ -26,10 +26,16 @@
 - [x] Patch Channels
   - [x] Update Stream title
   - [x] Update Stream category
+  - [x] Update Stream tags
+- [x] Get Channel Rewards
+- [x] Create Channel Reward
+- [x] Update Channel Reward
+- [x] Delete Channel Reward
 
 **Chat:**
 
 - [x] Post Chat Message
+- [x] Delete Chat Message
 
 **Moderation:**
 
@@ -39,10 +45,15 @@
 **Livestreams:**
 
 - [x] Get Livestreams
+- [x] Get Livestreams Stats
 
 **Public Key:**
 
 - [x] Get Public Key
+
+**Kicks:**
+
+- [x] Get Kicks Leaderboard
 
 ## Events
 
@@ -62,3 +73,5 @@
 - [x] Livestream Status Updated
 - [x] Livestream Metadata Updated
 - [x] Moderation Banned
+- [x] Kicks Gifted
+- [x] Channel Reward Redemption Updated

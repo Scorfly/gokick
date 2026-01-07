@@ -12,6 +12,21 @@
 
 	spew.Dump("categories", categories)
 ```
+
+### Get Categories with pagination
+
+```go
+    client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	categories, err := client.GetCategories(context.Background(), gokick.NewCategoryListFilter().SetQuery("gaming").SetPage(2))
+	if err != nil {
+		log.Fatalf("Failed to fetch categories: %v", err)
+	}
+
+	spew.Dump("categories", categories)
+```
 output
 ```
 (string) (len=10) "categories"
