@@ -10,8 +10,9 @@ import (
 )
 
 type (
-	ChannelsResponseWrapper Response[[]ChannelResponse]
-	ChannelResponseWrapper  Response[ChannelResponse]
+	ChannelsResponseWrapper       Response[[]ChannelResponse]
+	ChannelResponseWrapper        Response[ChannelResponse]
+	ChannelRewardsResponseWrapper Response[[]ChannelRewardResponse]
 )
 
 type StreamResponse struct {
@@ -34,6 +35,18 @@ type ChannelResponse struct {
 	Slug               string           `json:"slug"`
 	Stream             StreamResponse   `json:"stream"`
 	StreamTitle        string           `json:"stream_title"`
+}
+
+type ChannelRewardResponse struct {
+	BackgroundColor                   *string `json:"background_color,omitempty"`
+	Cost                              int     `json:"cost"`
+	Description                       *string `json:"description,omitempty"`
+	ID                                string  `json:"id"`
+	IsEnabled                         *bool   `json:"is_enabled,omitempty"`
+	IsPaused                          *bool   `json:"is_paused,omitempty"`
+	IsUserInputRequired               *bool   `json:"is_user_input_required,omitempty"`
+	ShouldRedemptionsSkipRequestQueue *bool   `json:"should_redemptions_skip_request_queue,omitempty"`
+	Title                             string  `json:"title"`
 }
 
 type ChannelListFilter struct {
@@ -182,4 +195,20 @@ func (c *Client) UpdateCustomTags(ctx context.Context, tags []string) (EmptyResp
 	}
 
 	return EmptyResponse{}, nil
+}
+
+func (c *Client) GetChannelRewards(ctx context.Context) (ChannelRewardsResponseWrapper, error) {
+	response, err := makeRequest[[]ChannelRewardResponse](
+		ctx,
+		c,
+		http.MethodGet,
+		"/public/v1/channels/rewards",
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return ChannelRewardsResponseWrapper{}, err
+	}
+
+	return ChannelRewardsResponseWrapper(response), nil
 }
