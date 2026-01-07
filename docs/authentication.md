@@ -110,3 +110,63 @@ output
 		"MGNMZJxxxx",
 	)
 ```
+
+## Token Management
+
+### Set App Access Token
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:     "01JMFxxxxx",
+		ClientSecret: "894b81xxxxx",
+	})
+
+	client.SetAppAccessToken("YTDKOTHxxxxx")
+```
+
+### Set User Access Token
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:     "01JMFxxxxx",
+		ClientSecret: "894b81xxxxx",
+	})
+
+	client.SetUserAccessToken("MDJMMWNMxxxxx")
+```
+
+### Set User Refresh Token
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:     "01JMFxxxxx",
+		ClientSecret: "894b81xxxxx",
+	})
+
+	client.SetUserRefreshToken("MGNMxxxx")
+```
+
+## Auto Token Refresh
+
+The client can automatically refresh user access tokens when they expire. To enable this feature, you need to provide `ClientID`, `ClientSecret`, and `UserRefreshToken` in the client options.
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		ClientID:        "01JMFMAxxxx",
+		ClientSecret:    "894b8190xxxxxx",
+		UserAccessToken: "current-access-token",
+		UserRefreshToken: "your-refresh-token",
+	})
+
+	// Optionally, set a callback to be notified when tokens are refreshed
+	client.OnUserAccessTokenRefreshed(func(accessToken, refreshToken string) {
+		// Save the new tokens to your storage
+		fmt.Printf("New access token: %s\n", accessToken)
+		fmt.Printf("New refresh token: %s\n", refreshToken)
+	})
+
+	// When making API calls, if the access token expires, the client will
+	// automatically refresh it and retry the request
+	response, err := client.GetChannels(context.Background(), gokick.NewChannelListFilter())
+```
+```

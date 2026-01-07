@@ -1,3 +1,16 @@
+## Validate event (without parsing)
+
+```go
+	req := http.Request{} // your request here
+	body, _ := io.ReadAll(req.Body)
+	
+	isValid := gokick.ValidateEvent(req.Header, body)
+	
+	if !isValid {
+		log.Fatal("Event signature is invalid")
+	}
+```
+
 ## Validate and parse event
 
 Headers
@@ -50,7 +63,24 @@ output
   ChannelSlug: (string) (len=7) "scorfly"
  },
  Content: (string) (len=6) "Test [emote:39261:kkHuh] test[emote:39265:EDMusiC]",
- Emotes: ([]gokick.ChatMessageEmotesEvent) <nil>
+ Emotes: ([]gokick.ChatMessageEmotesEvent) <nil>,
+ CreatedAt: (string) (len=20) "2025-02-21T23:23:36Z",
+ RepliesTo: (struct {
+  MessageID string "json:\"message_id\"";
+  Sender gokick.UserEvent "json:\"sender\"";
+  Content string "json:\"content\""
+ }) {
+  MessageID: (string) "",
+  Sender: (gokick.UserEvent) {
+   IsAnonymous: (bool) false,
+   UserID: (int) 0,
+   Username: (string) "",
+   IsVerified: (bool) false,
+   ProfilePicture: (string) "",
+   ChannelSlug: (string) ""
+  },
+  Content: (string) ""
+ }
 })
 ```
 
@@ -61,6 +91,42 @@ output
 	response, _ := gokick.GetEventFromRequest(req)
 
 	event := response.(*gokick.ChatMessageEvent) // need to cast the type depending of the subscriptionName
+
+	spew.Dump("event", event)
+```
+
+## Kicks Gifted Event
+
+```go
+    subscriptionName, _ := gokick.NewSubscriptionName("kicks.gifted")
+	response, _ := gokick.ValidateAndParseEvent(
+		subscriptionName,
+		"1",
+		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",
+		"01JMND5PSxxxxxx",
+		"2025-02-21T23:23:36Z",
+		`{"broadcaster":{...},"sender":{...},"gift":{"amount":100,"name":"Kick","type":"kick","tier":"1","message":"Thanks!"},"created_at":"2025-02-21T23:23:36Z"}`,
+	)
+
+	event := response.(*gokick.KicksGiftedEvent)
+
+	spew.Dump("event", event)
+```
+
+## Channel Reward Redemption Updated Event
+
+```go
+    subscriptionName, _ := gokick.NewSubscriptionName("channel.reward.redemption.updated")
+	response, _ := gokick.ValidateAndParseEvent(
+		subscriptionName,
+		"1",
+		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",
+		"01JMND5PSxxxxxx",
+		"2025-02-21T23:23:36Z",
+		`{"id":"01JMxxxxx","user_input":"test","status":"fulfilled","redeemed_at":"2025-02-21T23:23:36Z","reward":{"id":"01JMxxxxx","title":"Test Reward","cost":100,"description":"A test reward"},"redeemer":{...},"broadcaster":{...}}`,
+	)
+
+	event := response.(*gokick.ChannelRewardRedemptionUpdatedEvent)
 
 	spew.Dump("event", event)
 ```

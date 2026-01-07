@@ -54,7 +54,27 @@ output
 			Version: 1,
 		},
 	}
-	response, _ := client.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, subscriptions)
+	// broadcasterUserID is optional - if nil, uses the authenticated user's channel
+	response, _ := client.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, subscriptions, nil)
+
+	spew.Dump("response", response)
+```
+
+### Post Events Subscriptions with broadcasterUserID
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	subscriptions := []gokick.SubscriptionRequest{
+		{
+			Name:    gokick.SubscriptionNameChatMessage,
+			Version: 1,
+		},
+	}
+	broadcasterUserID := 721956
+	response, _ := client.CreateSubscriptions(context.Background(), gokick.SubscriptionMethodWebhook, subscriptions, &broadcasterUserID)
 
 	spew.Dump("response", response)
 ```
