@@ -154,8 +154,10 @@ func TestGetLivestreamsSuccess(t *testing.T) {
 					"name": "category name"
 				},
 				"channel_id": 198,
+				"custom_tags": ["tag1", "tag2"],
 				"has_mature_content": true,
 				"language": "fr",
+				"profile_picture": "profile_picture_url",
 				"slug": "slug",
 				"started_at": "started_at",
 				"stream_title": "stream_title",
@@ -173,8 +175,10 @@ func TestGetLivestreamsSuccess(t *testing.T) {
 		assert.Equal(t, "category name", LivestreamsResponse.Result[0].Category.Name)
 		assert.Equal(t, "category image url", LivestreamsResponse.Result[0].Category.Thumbnail)
 		assert.Equal(t, 198, LivestreamsResponse.Result[0].ChannelID)
+		assert.Equal(t, []string{"tag1", "tag2"}, LivestreamsResponse.Result[0].CustomTags)
 		assert.True(t, LivestreamsResponse.Result[0].HasMatureContent)
 		assert.Equal(t, "fr", LivestreamsResponse.Result[0].Language)
+		assert.Equal(t, "profile_picture_url", LivestreamsResponse.Result[0].ProfilePicture)
 		assert.Equal(t, "slug", LivestreamsResponse.Result[0].Slug)
 		assert.Equal(t, "started_at", LivestreamsResponse.Result[0].StartedAt)
 		assert.Equal(t, "stream_title", LivestreamsResponse.Result[0].StreamTitle)
@@ -255,37 +259,10 @@ func TestGetLivestreamsStatsError(t *testing.T) {
 func TestGetLivestreamsStatsSuccess(t *testing.T) {
 	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"message":"success", "data":{
-				"broadcaster_user_id": 219,
-				"category": {
-					"id": 123,
-					"thumbnail": "category image url",
-					"name": "category name"
-				},
-				"channel_id": 198,
-				"has_mature_content": true,
-				"language": "fr",
-				"slug": "slug",
-				"started_at": "started_at",
-				"stream_title": "stream_title",
-				"thumbnail": "thumbnail_url",
-				"viewer_count": 167
-				}
-  			}`)
+		fmt.Fprint(w, `{"message":"success", "data":{"total_count": 100}}`)
 	})
 
 	LivestreamsResponse, err := kickClient.GetLivestreamsStats(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 219, LivestreamsResponse.Result.BroadcasterUserID)
-	assert.Equal(t, 123, LivestreamsResponse.Result.Category.ID)
-	assert.Equal(t, "category name", LivestreamsResponse.Result.Category.Name)
-	assert.Equal(t, "category image url", LivestreamsResponse.Result.Category.Thumbnail)
-	assert.Equal(t, 198, LivestreamsResponse.Result.ChannelID)
-	assert.True(t, LivestreamsResponse.Result.HasMatureContent)
-	assert.Equal(t, "fr", LivestreamsResponse.Result.Language)
-	assert.Equal(t, "slug", LivestreamsResponse.Result.Slug)
-	assert.Equal(t, "started_at", LivestreamsResponse.Result.StartedAt)
-	assert.Equal(t, "stream_title", LivestreamsResponse.Result.StreamTitle)
-	assert.Equal(t, "thumbnail_url", LivestreamsResponse.Result.Thumbnail)
-	assert.Equal(t, 167, LivestreamsResponse.Result.ViewerCount)
+	assert.Equal(t, 100, LivestreamsResponse.Result.TotalCount)
 }
