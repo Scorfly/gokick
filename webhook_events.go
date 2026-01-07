@@ -133,6 +133,21 @@ type KicksGiftedEvent struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type ChannelRewardRedemptionUpdatedEvent struct {
+	ID         string `json:"id"`
+	UserInput  string `json:"user_input"`
+	Status     string `json:"status"`
+	RedeemedAt string `json:"redeemed_at"`
+	Reward     struct {
+		ID          string `json:"id"`
+		Title       string `json:"title"`
+		Cost        int    `json:"cost"`
+		Description string `json:"description"`
+	} `json:"reward"`
+	Redeemer    UserEvent `json:"redeemer"`
+	Broadcaster UserEvent `json:"broadcaster"`
+}
+
 // I set it as public to be able to change it in tests.
 // It's not a good practice to do so, but it's the only way to do it for now.
 var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
@@ -320,5 +335,8 @@ var eventConstructors = map[SubscriptionName]map[string]eventConstructor{
 	},
 	SubscriptionNameKicksGifted: {
 		"1": func() interface{} { return new(KicksGiftedEvent) },
+	},
+	SubscriptionNameChannelRewardRedemptionUpdated: {
+		"1": func() interface{} { return new(ChannelRewardRedemptionUpdatedEvent) },
 	},
 }
