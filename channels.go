@@ -244,6 +244,42 @@ func (c *Client) CreateChannelReward(ctx context.Context, req CreateChannelRewar
 	return response, nil
 }
 
+type UpdateChannelRewardRequest struct {
+	BackgroundColor                   *string `json:"background_color,omitempty"`
+	Cost                              *int    `json:"cost,omitempty"`
+	Description                       *string `json:"description,omitempty"`
+	IsEnabled                         *bool   `json:"is_enabled,omitempty"`
+	IsPaused                          *bool   `json:"is_paused,omitempty"`
+	IsUserInputRequired               *bool   `json:"is_user_input_required,omitempty"`
+	ShouldRedemptionsSkipRequestQueue *bool   `json:"should_redemptions_skip_request_queue,omitempty"`
+	Title                             *string `json:"title,omitempty"`
+}
+
+func (c *Client) UpdateChannelReward(
+	ctx context.Context,
+	id string,
+	req UpdateChannelRewardRequest,
+) (Response[ChannelRewardResponse], error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return Response[ChannelRewardResponse]{}, fmt.Errorf("failed to marshal body: %v", err)
+	}
+
+	response, err := makeRequest[ChannelRewardResponse](
+		ctx,
+		c,
+		http.MethodPatch,
+		fmt.Sprintf("/public/v1/channels/rewards/%s", id),
+		http.StatusOK,
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return Response[ChannelRewardResponse]{}, err
+	}
+
+	return response, nil
+}
+
 func (c *Client) DeleteChannelReward(ctx context.Context, id string) (EmptyResponse, error) {
 	_, err := makeRequest[EmptyResponse](
 		ctx,
