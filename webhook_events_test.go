@@ -344,6 +344,11 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 				version:      "1",
 				expectedType: &gokick.KicksGiftedEvent{},
 			},
+			"with new channel reward redemption updated version 1": {
+				subscription: gokick.SubscriptionNameChannelRewardRedemptionUpdated,
+				version:      "1",
+				expectedType: &gokick.ChannelRewardRedemptionUpdatedEvent{},
+			},
 		}
 
 		for name, testCase := range testCases {

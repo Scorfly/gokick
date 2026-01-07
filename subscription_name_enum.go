@@ -5,15 +5,16 @@ import "fmt"
 type SubscriptionName int
 
 const (
-	SubscriptionNameChatMessage                SubscriptionName = iota // chat.message.sent
-	SubscriptionNameChannelFollow                                      // channel.followed
-	SubscriptionNameChannelSubscriptionRenewal                         // channel.subscription.renewal
-	SubscriptionNameChannelSubscriptionGifts                           // channel.subscription.gifts
-	SubscriptionNameChannelSubscriptionCreated                         // channel.subscription.new
-	SubscriptionNameLivestreamStatusUpdated                            // livestream.status.updated
-	SubscriptionNameLivestreamMetadataUpdated                          // livestream.metadata.updated
-	SubscriptionNameModerationBanned                                   // moderation.banned
-	SubscriptionNameKicksGifted                                        // kicks.gifted
+	SubscriptionNameChatMessage                    SubscriptionName = iota // chat.message.sent
+	SubscriptionNameChannelFollow                                          // channel.followed
+	SubscriptionNameChannelSubscriptionRenewal                             // channel.subscription.renewal
+	SubscriptionNameChannelSubscriptionGifts                               // channel.subscription.gifts
+	SubscriptionNameChannelSubscriptionCreated                             // channel.subscription.new
+	SubscriptionNameLivestreamStatusUpdated                                // livestream.status.updated
+	SubscriptionNameLivestreamMetadataUpdated                              // livestream.metadata.updated
+	SubscriptionNameModerationBanned                                       // moderation.banned
+	SubscriptionNameKicksGifted                                            // kicks.gifted
+	SubscriptionNameChannelRewardRedemptionUpdated                         // channel.reward.redemption.updated
 )
 
 func NewSubscriptionName(name string) (SubscriptionName, error) {
@@ -36,6 +37,8 @@ func NewSubscriptionName(name string) (SubscriptionName, error) {
 		return SubscriptionNameModerationBanned, nil
 	case "kicks.gifted":
 		return SubscriptionNameKicksGifted, nil
+	case "channel.reward.redemption.updated":
+		return SubscriptionNameChannelRewardRedemptionUpdated, nil
 	default:
 		return 0, fmt.Errorf("unknown name: %s", name)
 	}
@@ -61,6 +64,8 @@ func (s SubscriptionName) String() string {
 		return "moderation.banned"
 	case SubscriptionNameKicksGifted:
 		return "kicks.gifted"
+	case SubscriptionNameChannelRewardRedemptionUpdated:
+		return "channel.reward.redemption.updated"
 	default:
 		return "unknown"
 	}

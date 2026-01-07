@@ -25,15 +25,16 @@ func TestNewSubscriptionNameError(t *testing.T) {
 
 func TestNewSubscriptionNameSuccess(t *testing.T) {
 	testCases := map[string]gokick.SubscriptionName{
-		"chat.message.sent":            gokick.SubscriptionNameChatMessage,
-		"channel.followed":             gokick.SubscriptionNameChannelFollow,
-		"channel.subscription.renewal": gokick.SubscriptionNameChannelSubscriptionRenewal,
-		"channel.subscription.gifts":   gokick.SubscriptionNameChannelSubscriptionGifts,
-		"channel.subscription.new":     gokick.SubscriptionNameChannelSubscriptionCreated,
-		"livestream.status.updated":    gokick.SubscriptionNameLivestreamStatusUpdated,
-		"livestream.metadata.updated":  gokick.SubscriptionNameLivestreamMetadataUpdated,
-		"moderation.banned":            gokick.SubscriptionNameModerationBanned,
-		"kicks.gifted":                 gokick.SubscriptionNameKicksGifted,
+		"chat.message.sent":                 gokick.SubscriptionNameChatMessage,
+		"channel.followed":                  gokick.SubscriptionNameChannelFollow,
+		"channel.subscription.renewal":      gokick.SubscriptionNameChannelSubscriptionRenewal,
+		"channel.subscription.gifts":        gokick.SubscriptionNameChannelSubscriptionGifts,
+		"channel.subscription.new":          gokick.SubscriptionNameChannelSubscriptionCreated,
+		"livestream.status.updated":         gokick.SubscriptionNameLivestreamStatusUpdated,
+		"livestream.metadata.updated":       gokick.SubscriptionNameLivestreamMetadataUpdated,
+		"moderation.banned":                 gokick.SubscriptionNameModerationBanned,
+		"kicks.gifted":                      gokick.SubscriptionNameKicksGifted,
+		"channel.reward.redemption.updated": gokick.SubscriptionNameChannelRewardRedemptionUpdated,
 	}
 
 	for name, value := range testCases {
