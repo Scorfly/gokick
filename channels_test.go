@@ -643,3 +643,224 @@ func TestGetChannelRewardsSuccess(t *testing.T) {
 		assert.Equal(t, "Basic Reward", rewardsResponse.Result[0].Title)
 	})
 }
+
+func TestCreateChannelRewardError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.CreateChannelReward(ctx, gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/channels/rewards": context deadline exceeded `+
+			`(Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal reward response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.ChannelRewardResponse]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestCreateChannelRewardSuccess(t *testing.T) {
+	t.Run("with all fields", func(t *testing.T) {
+		backgroundColor := "#fff111"
+		description := "Request a song by providing a URL"
+		isEnabled := true
+		isUserInputRequired := false
+		shouldRedemptionsSkipRequestQueue := false
+
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards", r.URL.Path)
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			var body map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&body)
+			assert.NoError(t, err)
+
+			assert.Equal(t, "#fff111", body["background_color"])
+			assert.InEpsilon(t, float64(100), body["cost"], 0)
+			assert.Equal(t, "Request a song by providing a URL", body["description"])
+			assert.Equal(t, true, body["is_enabled"])
+			assert.Equal(t, false, body["is_user_input_required"])
+			assert.Equal(t, false, body["should_redemptions_skip_request_queue"])
+			assert.Equal(t, "Song Request", body["title"])
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": {
+					"background_color": "#00e701",
+					"cost": 100,
+					"description": "Request a song by providing a URL",
+					"id": "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4",
+					"is_enabled": true,
+					"is_paused": false,
+					"is_user_input_required": false,
+					"should_redemptions_skip_request_queue": false,
+					"title": "Song Request"
+				},
+				"message": "text"
+			}`)
+		})
+
+		rewardResponse, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			BackgroundColor:                   &backgroundColor,
+			Cost:                              100,
+			Description:                       &description,
+			IsEnabled:                         &isEnabled,
+			IsUserInputRequired:               &isUserInputRequired,
+			ShouldRedemptionsSkipRequestQueue: &shouldRedemptionsSkipRequestQueue,
+			Title:                             "Song Request",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, rewardResponse.Result.BackgroundColor)
+		assert.Equal(t, "#00e701", *rewardResponse.Result.BackgroundColor)
+		assert.Equal(t, 100, rewardResponse.Result.Cost)
+		require.NotNil(t, rewardResponse.Result.Description)
+		assert.Equal(t, "Request a song by providing a URL", *rewardResponse.Result.Description)
+		assert.Equal(t, "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4", rewardResponse.Result.ID)
+		require.NotNil(t, rewardResponse.Result.IsEnabled)
+		assert.True(t, *rewardResponse.Result.IsEnabled)
+		require.NotNil(t, rewardResponse.Result.IsPaused)
+		assert.False(t, *rewardResponse.Result.IsPaused)
+		require.NotNil(t, rewardResponse.Result.IsUserInputRequired)
+		assert.False(t, *rewardResponse.Result.IsUserInputRequired)
+		require.NotNil(t, rewardResponse.Result.ShouldRedemptionsSkipRequestQueue)
+		assert.False(t, *rewardResponse.Result.ShouldRedemptionsSkipRequestQueue)
+		assert.Equal(t, "Song Request", rewardResponse.Result.Title)
+	})
+
+	t.Run("with only required fields", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards", r.URL.Path)
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			var body map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&body)
+			assert.NoError(t, err)
+
+			assert.InEpsilon(t, float64(100), body["cost"], 0)
+			assert.Equal(t, "Song Request", body["title"])
+			_, hasBackgroundColor := body["background_color"]
+			assert.False(t, hasBackgroundColor, "background_color should not be present")
+			_, hasDescription := body["description"]
+			assert.False(t, hasDescription, "description should not be present")
+			_, hasIsEnabled := body["is_enabled"]
+			assert.False(t, hasIsEnabled, "is_enabled should not be present")
+			_, hasIsUserInputRequired := body["is_user_input_required"]
+			assert.False(t, hasIsUserInputRequired, "is_user_input_required should not be present")
+			_, hasShouldRedemptionsSkipRequestQueue := body["should_redemptions_skip_request_queue"]
+			assert.False(t, hasShouldRedemptionsSkipRequestQueue, "should_redemptions_skip_request_queue should not be present")
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": {
+					"background_color": "#00e701",
+					"cost": 100,
+					"description": "Request a song by providing a URL",
+					"id": "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4",
+					"is_enabled": true,
+					"is_paused": false,
+					"is_user_input_required": false,
+					"should_redemptions_skip_request_queue": false,
+					"title": "Song Request"
+				},
+				"message": "text"
+			}`)
+		})
+
+		rewardResponse, err := kickClient.CreateChannelReward(context.Background(), gokick.CreateChannelRewardRequest{
+			Cost:  100,
+			Title: "Song Request",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, rewardResponse.Result.BackgroundColor)
+		assert.Equal(t, "#00e701", *rewardResponse.Result.BackgroundColor)
+		assert.Equal(t, 100, rewardResponse.Result.Cost)
+		require.NotNil(t, rewardResponse.Result.Description)
+		assert.Equal(t, "Request a song by providing a URL", *rewardResponse.Result.Description)
+		assert.Equal(t, "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4", rewardResponse.Result.ID)
+		require.NotNil(t, rewardResponse.Result.IsEnabled)
+		assert.True(t, *rewardResponse.Result.IsEnabled)
+		require.NotNil(t, rewardResponse.Result.IsPaused)
+		assert.False(t, *rewardResponse.Result.IsPaused)
+		require.NotNil(t, rewardResponse.Result.IsUserInputRequired)
+		assert.False(t, *rewardResponse.Result.IsUserInputRequired)
+		require.NotNil(t, rewardResponse.Result.ShouldRedemptionsSkipRequestQueue)
+		assert.False(t, *rewardResponse.Result.ShouldRedemptionsSkipRequestQueue)
+		assert.Equal(t, "Song Request", rewardResponse.Result.Title)
+	})
+}
