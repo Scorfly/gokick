@@ -172,31 +172,6 @@ func (c *Client) UpdateStreamTags(ctx context.Context, tags []string) (EmptyResp
 	return EmptyResponse{}, nil
 }
 
-func (c *Client) UpdateCustomTags(ctx context.Context, tags []string) (EmptyResponse, error) {
-	type patchBodyRequest struct {
-		CustomTags []string `json:"custom_tags"`
-	}
-
-	body, err := json.Marshal(patchBodyRequest{CustomTags: tags})
-	if err != nil {
-		return EmptyResponse{}, fmt.Errorf("failed to marshal body: %v", err)
-	}
-
-	_, err = makeRequest[EmptyResponse](
-		ctx,
-		c,
-		http.MethodPatch,
-		"/public/v1/channels",
-		http.StatusNoContent,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return EmptyResponse{}, err
-	}
-
-	return EmptyResponse{}, nil
-}
-
 func (c *Client) GetChannelRewards(ctx context.Context) (ChannelRewardsResponseWrapper, error) {
 	response, err := makeRequest[[]ChannelRewardResponse](
 		ctx,
