@@ -212,3 +212,34 @@ func (c *Client) GetChannelRewards(ctx context.Context) (ChannelRewardsResponseW
 
 	return ChannelRewardsResponseWrapper(response), nil
 }
+
+type CreateChannelRewardRequest struct {
+	BackgroundColor                   *string `json:"background_color,omitempty"`
+	Cost                              int     `json:"cost"`
+	Description                       *string `json:"description,omitempty"`
+	IsEnabled                         *bool   `json:"is_enabled,omitempty"`
+	IsUserInputRequired               *bool   `json:"is_user_input_required,omitempty"`
+	ShouldRedemptionsSkipRequestQueue *bool   `json:"should_redemptions_skip_request_queue,omitempty"`
+	Title                             string  `json:"title"`
+}
+
+func (c *Client) CreateChannelReward(ctx context.Context, req CreateChannelRewardRequest) (Response[ChannelRewardResponse], error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return Response[ChannelRewardResponse]{}, fmt.Errorf("failed to marshal body: %v", err)
+	}
+
+	response, err := makeRequest[ChannelRewardResponse](
+		ctx,
+		c,
+		http.MethodPost,
+		"/public/v1/channels/rewards",
+		http.StatusOK,
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return Response[ChannelRewardResponse]{}, err
+	}
+
+	return response, nil
+}
