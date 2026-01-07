@@ -501,3 +501,145 @@ func TestUpdateCustomTagsSuccess(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestGetChannelRewardsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.GetChannelRewards(ctx)
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.GetChannelRewards(context.Background())
+		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/channels/rewards": context deadline exceeded `+
+			`(Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.GetChannelRewards(context.Background())
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal rewards response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.GetChannelRewards(context.Background())
+
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.ChannelRewardResponse]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.GetChannelRewards(context.Background())
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.GetChannelRewards(context.Background())
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestGetChannelRewardsSuccess(t *testing.T) {
+	t.Run("without result", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"message":"text", "data":[]}`)
+		})
+
+		rewardsResponse, err := kickClient.GetChannelRewards(context.Background())
+		require.NoError(t, err)
+		assert.Empty(t, rewardsResponse.Result)
+	})
+
+	t.Run("with result", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"message":"text", "data":[{
+				"background_color": "#00e701",
+				"cost": 100,
+				"description": "Request a song by providing a URL",
+				"id": "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4",
+				"is_enabled": true,
+				"is_paused": false,
+				"is_user_input_required": false,
+				"should_redemptions_skip_request_queue": false,
+				"title": "Song Request"
+			}]}`)
+		})
+
+		rewardsResponse, err := kickClient.GetChannelRewards(context.Background())
+		require.NoError(t, err)
+		require.Len(t, rewardsResponse.Result, 1)
+		require.NotNil(t, rewardsResponse.Result[0].BackgroundColor)
+		assert.Equal(t, "#00e701", *rewardsResponse.Result[0].BackgroundColor)
+		assert.Equal(t, 100, rewardsResponse.Result[0].Cost)
+		require.NotNil(t, rewardsResponse.Result[0].Description)
+		assert.Equal(t, "Request a song by providing a URL", *rewardsResponse.Result[0].Description)
+		assert.Equal(t, "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4", rewardsResponse.Result[0].ID)
+		require.NotNil(t, rewardsResponse.Result[0].IsEnabled)
+		assert.True(t, *rewardsResponse.Result[0].IsEnabled)
+		require.NotNil(t, rewardsResponse.Result[0].IsPaused)
+		assert.False(t, *rewardsResponse.Result[0].IsPaused)
+		require.NotNil(t, rewardsResponse.Result[0].IsUserInputRequired)
+		assert.False(t, *rewardsResponse.Result[0].IsUserInputRequired)
+		require.NotNil(t, rewardsResponse.Result[0].ShouldRedemptionsSkipRequestQueue)
+		assert.False(t, *rewardsResponse.Result[0].ShouldRedemptionsSkipRequestQueue)
+		assert.Equal(t, "Song Request", rewardsResponse.Result[0].Title)
+	})
+
+	t.Run("with only required fields", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"message":"text", "data":[{
+				"cost": 50,
+				"id": "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4",
+				"title": "Basic Reward"
+			}]}`)
+		})
+
+		rewardsResponse, err := kickClient.GetChannelRewards(context.Background())
+		require.NoError(t, err)
+		require.Len(t, rewardsResponse.Result, 1)
+		assert.Nil(t, rewardsResponse.Result[0].BackgroundColor)
+		assert.Equal(t, 50, rewardsResponse.Result[0].Cost)
+		assert.Nil(t, rewardsResponse.Result[0].Description)
+		assert.Equal(t, "01HZ8X9K2M4N6P8Q0R2S4T6V8W0Y2Z4", rewardsResponse.Result[0].ID)
+		assert.Nil(t, rewardsResponse.Result[0].IsEnabled)
+		assert.Nil(t, rewardsResponse.Result[0].IsPaused)
+		assert.Nil(t, rewardsResponse.Result[0].IsUserInputRequired)
+		assert.Nil(t, rewardsResponse.Result[0].ShouldRedemptionsSkipRequestQueue)
+		assert.Equal(t, "Basic Reward", rewardsResponse.Result[0].Title)
+	})
+}
