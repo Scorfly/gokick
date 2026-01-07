@@ -864,3 +864,88 @@ func TestCreateChannelRewardSuccess(t *testing.T) {
 		assert.Equal(t, "Song Request", rewardResponse.Result.Title)
 	})
 }
+
+func TestDeleteChannelRewardError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.DeleteChannelReward(ctx, "reward-id")
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+		require.EqualError(t, err, `failed to make request: Delete "https://api.kick.com/public/v1/channels/rewards/reward-id": `+
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal token response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestDeleteChannelRewardSuccess(t *testing.T) {
+	t.Run("successful deletion", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodDelete, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards/reward-id", r.URL.Path)
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			w.WriteHeader(http.StatusNoContent)
+		})
+
+		_, err := kickClient.DeleteChannelReward(context.Background(), "reward-id")
+		require.NoError(t, err)
+	})
+}

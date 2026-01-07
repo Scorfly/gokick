@@ -243,3 +243,19 @@ func (c *Client) CreateChannelReward(ctx context.Context, req CreateChannelRewar
 
 	return response, nil
 }
+
+func (c *Client) DeleteChannelReward(ctx context.Context, id string) (EmptyResponse, error) {
+	_, err := makeRequest[EmptyResponse](
+		ctx,
+		c,
+		http.MethodDelete,
+		fmt.Sprintf("/public/v1/channels/rewards/%s", id),
+		http.StatusNoContent,
+		http.NoBody,
+	)
+	if err != nil {
+		return EmptyResponse{}, err
+	}
+
+	return EmptyResponse{}, nil
+}
