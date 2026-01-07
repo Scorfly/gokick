@@ -61,3 +61,19 @@ func (c *Client) SendChatMessage(
 
 	return ChatResponseWrapper(response), nil
 }
+
+func (c *Client) DeleteChatMessage(ctx context.Context, messageID string) (EmptyResponse, error) {
+	_, err := makeRequest[EmptyResponse](
+		ctx,
+		c,
+		http.MethodDelete,
+		fmt.Sprintf("/public/v1/chat/%s", messageID),
+		http.StatusNoContent,
+		http.NoBody,
+	)
+	if err != nil {
+		return EmptyResponse{}, err
+	}
+
+	return EmptyResponse{}, nil
+}
