@@ -25,14 +25,17 @@ func TestNewScopeError(t *testing.T) {
 
 func TestNewScopeSuccess(t *testing.T) {
 	testCases := map[string]gokick.Scope{
-		"user:read":        gokick.ScopeUserRead,
-		"channel:read":     gokick.ScopeChannelRead,
-		"channel:write":    gokick.ScopeChannelWrite,
-		"chat:write":       gokick.ScopeChatWrite,
-		"streamkey:read":   gokick.ScopeStremkeyRead,
-		"events:subscribe": gokick.ScopeEventSubscribe,
-		"moderation:ban":   gokick.ScopeModerationBan,
-		"kicks:read":       gokick.ScopeKicksRead,
+		"user:read":                      gokick.ScopeUserRead,
+		"channel:read":                   gokick.ScopeChannelRead,
+		"channel:write":                  gokick.ScopeChannelWrite,
+		"channel:rewards:read":           gokick.ScopeChannelRewardsRead,
+		"channel:rewards:write":          gokick.ScopeChannelRewardsWrite,
+		"chat:write":                     gokick.ScopeChatWrite,
+		"streamkey:read":                 gokick.ScopeStreamkeyRead,
+		"events:subscribe":               gokick.ScopeEventSubscribe,
+		"moderation:ban":                 gokick.ScopeModerationBan,
+		"moderation:chat_message:manage": gokick.ScopeModerationChatMessageManage,
+		"kicks:read":                     gokick.ScopeKicksRead,
 	}
 
 	for name, value := range testCases {
