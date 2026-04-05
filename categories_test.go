@@ -20,17 +20,36 @@ func TestNewCategoryListFilterSuccess(t *testing.T) {
 			filter:              gokick.NewCategoryListFilter(),
 			expectedQueryString: "",
 		},
-		"with query": {
-			filter:              gokick.NewCategoryListFilter().SetQuery("test"),
-			expectedQueryString: "?q=test",
+		"with cursor": {
+			filter:              gokick.NewCategoryListFilter().SetCursor("abc123"),
+			expectedQueryString: "?cursor=abc123",
 		},
-		"with page": {
-			filter:              gokick.NewCategoryListFilter().SetPage(3),
-			expectedQueryString: "?page=3",
+		"with limit": {
+			filter:              gokick.NewCategoryListFilter().SetLimit(50),
+			expectedQueryString: "?limit=50",
 		},
-		"with query and page": {
-			filter:              gokick.NewCategoryListFilter().SetQuery("test").SetPage(3),
-			expectedQueryString: "?page=3&q=test",
+		"with single name": {
+			filter:              gokick.NewCategoryListFilter().AddName("gaming"),
+			expectedQueryString: "?name=gaming",
+		},
+		"with two names": {
+			filter:              gokick.NewCategoryListFilter().AddName("a").AddName("b"),
+			expectedQueryString: "?name=a%2Cb",
+		},
+		"with tag": {
+			filter:              gokick.NewCategoryListFilter().AddTag("fps"),
+			expectedQueryString: "?tag=fps",
+		},
+		"with id": {
+			filter:              gokick.NewCategoryListFilter().AddID(117),
+			expectedQueryString: "?id=117",
+		},
+		"cursor limit and id": {
+			filter: gokick.NewCategoryListFilter().
+				SetCursor("next").
+				SetLimit(10).
+				AddID(5),
+			expectedQueryString: "?cursor=next&id=5&limit=10",
 		},
 	}
 
@@ -55,7 +74,7 @@ func TestGetCategoriesError(t *testing.T) {
 		kickClient := setupTimeoutMockClient(t)
 
 		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
-		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/categories": context deadline exceeded `+
+		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v2/categories": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
 
@@ -79,8 +98,7 @@ func TestGetCategoriesError(t *testing.T) {
 
 		_, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 
-		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.CategoryResponse]`)
+		assert.Contains(t, err.Error(), `failed to unmarshal response body (KICK status code 200 and body "117")`)
 	})
 
 	t.Run("reader failure", func(t *testing.T) {
@@ -114,21 +132,22 @@ func TestGetCategoriesSuccess(t *testing.T) {
 	t.Run("without result", func(t *testing.T) {
 		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"message":"success", "data":[]}`)
+			fmt.Fprint(w, `{"message":"success", "data":[],"pagination":{"next_cursor":""}}`)
 		})
 
 		categoriesResponse, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
 		require.NoError(t, err)
 		assert.Empty(t, categoriesResponse.Result)
+		assert.Empty(t, categoriesResponse.Pagination.NextCursor)
 	})
 
 	t.Run("with result", func(t *testing.T) {
 		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, `{"message":"success", "data":[
-				{"id":1, "name":"Music", "thumbnail":"music"},
+				{"id":1, "name":"Music", "tags":["t1"], "thumbnail":"music"},
 				{"id":2, "name":"Comedy", "thumbnail":"comedy"}
-			]}`)
+			], "pagination":{"next_cursor":"next-page"}}`)
 		})
 
 		categoriesResponse, err := kickClient.GetCategories(context.Background(), gokick.NewCategoryListFilter())
@@ -136,10 +155,12 @@ func TestGetCategoriesSuccess(t *testing.T) {
 		require.Len(t, categoriesResponse.Result, 2)
 		assert.Equal(t, 1, categoriesResponse.Result[0].ID)
 		assert.Equal(t, "Music", categoriesResponse.Result[0].Name)
+		assert.Equal(t, []string{"t1"}, categoriesResponse.Result[0].Tags)
 		assert.Equal(t, "music", categoriesResponse.Result[0].Thumbnail)
 		assert.Equal(t, 2, categoriesResponse.Result[1].ID)
 		assert.Equal(t, "Comedy", categoriesResponse.Result[1].Name)
 		assert.Equal(t, "comedy", categoriesResponse.Result[1].Thumbnail)
+		assert.Equal(t, "next-page", categoriesResponse.Pagination.NextCursor)
 	})
 }
 
@@ -157,8 +178,9 @@ func TestGetCategoryError(t *testing.T) {
 		kickClient := setupTimeoutMockClient(t)
 
 		_, err := kickClient.GetCategory(context.Background(), 117)
-		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/categories/117": context deadline exceeded `+
-			`(Client.Timeout exceeded while awaiting headers)`)
+		wantErr := `failed to make request: Get "https://api.kick.com/public/v2/categories?id=117&limit=1": ` +
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`
+		require.EqualError(t, err, wantErr)
 	})
 
 	t.Run("unmarshal error response", func(t *testing.T) {
@@ -181,8 +203,7 @@ func TestGetCategoryError(t *testing.T) {
 
 		_, err := kickClient.GetCategory(context.Background(), 117)
 
-		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
-			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.CategoryResponse]`)
+		assert.Contains(t, err.Error(), `failed to unmarshal response body (KICK status code 200 and body "117")`)
 	})
 
 	t.Run("reader failure", func(t *testing.T) {
@@ -210,6 +231,16 @@ func TestGetCategoryError(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
 		assert.Equal(t, "internal server error", kickError.Message())
 	})
+
+	t.Run("empty result", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"message":"success", "data":[],"pagination":{"next_cursor":""}}`)
+		})
+
+		_, err := kickClient.GetCategory(context.Background(), 999)
+		require.EqualError(t, err, "category id 999: empty result")
+	})
 }
 
 func TestGetCategorySuccess(t *testing.T) {
@@ -217,7 +248,8 @@ func TestGetCategorySuccess(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{
 			"message":"success",
-			"data":{"id":117, "name":"Hubert", "thumbnail":"Bonisseur de La Bath"}
+			"data":[{"id":117, "name":"Hubert", "tags":["x"], "thumbnail":"Bonisseur de La Bath"}],
+			"pagination":{"next_cursor":""}
 		}`)
 	})
 
@@ -225,5 +257,6 @@ func TestGetCategorySuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 117, categoryResponse.Result.ID)
 	assert.Equal(t, "Hubert", categoryResponse.Result.Name)
+	assert.Equal(t, []string{"x"}, categoryResponse.Result.Tags)
 	assert.Equal(t, "Bonisseur de La Bath", categoryResponse.Result.Thumbnail)
 }

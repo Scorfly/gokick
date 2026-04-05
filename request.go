@@ -116,6 +116,66 @@ func makeRequestWithBaseURL[T any](
 	return Response[T](success), nil
 }
 
+func makePaginatedRequest[T any](
+	ctx context.Context,
+	request *Client,
+	method string,
+	path string,
+	statusCode int,
+	body io.Reader,
+) (PaginatedResponse[T], error) {
+	return makePaginatedRequestWithBaseURL[T](ctx, request, request.options.APIBaseURL, method, path, statusCode, body)
+}
+
+func makePaginatedRequestWithBaseURL[T any](
+	ctx context.Context,
+	request *Client,
+	baseURL string,
+	method string,
+	path string,
+	statusCode int,
+	body io.Reader,
+) (PaginatedResponse[T], error) {
+	url := request.buildURL(baseURL, path)
+
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return PaginatedResponse[T]{}, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := request.do(req)
+	if err != nil {
+		return PaginatedResponse[T]{}, fmt.Errorf("failed to make request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNoContent {
+		return PaginatedResponse[T]{}, nil
+	}
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return PaginatedResponse[T]{}, fmt.Errorf("failed to read response body (KICK status code %d): %v", resp.StatusCode, err)
+	}
+
+	if resp.StatusCode != statusCode {
+		return PaginatedResponse[T]{}, kickErrorFromResponse(resp.StatusCode, responseBody)
+	}
+
+	var success PaginatedResponse[T]
+
+	err = json.Unmarshal(responseBody, &success)
+	if err != nil {
+		return PaginatedResponse[T]{}, fmt.Errorf(
+			"failed to unmarshal response body (KICK status code %d and body %q): %v", resp.StatusCode, string(responseBody), err,
+		)
+	}
+
+	return success, nil
+}
+
 func makeAuthRequest[T any](
 	ctx context.Context,
 	request *Client,
