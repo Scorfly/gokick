@@ -27,12 +27,12 @@ type IdentityEvent struct {
 }
 
 type UserEvent struct {
-	IsAnonymous    bool          `json:"is_anonymous"`
-	UserID         int           `json:"user_id"`
-	Username       string        `json:"username"`
-	IsVerified     bool          `json:"is_verified"`
-	ProfilePicture string        `json:"profile_picture"`
-	ChannelSlug    string        `json:"channel_slug"`
+	IsAnonymous    bool           `json:"is_anonymous"`
+	UserID         int            `json:"user_id"`
+	Username       string         `json:"username"`
+	IsVerified     bool           `json:"is_verified"`
+	ProfilePicture string         `json:"profile_picture"`
+	ChannelSlug    string         `json:"channel_slug"`
 	Identity       *IdentityEvent `json:"identity"`
 }
 
@@ -102,7 +102,7 @@ type LivestreamMetadataUpdatedEvent struct {
 		Language         string `json:"language"`
 		HasMatureContent bool   `json:"has_mature_content"`
 		Category         struct {
-			ID        string `json:"id"`
+			ID        int    `json:"id"`
 			Name      string `json:"name"`
 			Thumbnail string `json:"thumbnail"`
 		} `json:"category"`

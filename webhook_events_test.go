@@ -39,7 +39,8 @@ func TestUserEvent_Identity_Unmarshal(t *testing.T) {
 	})
 	t.Run("object", func(t *testing.T) {
 		var u gokick.UserEvent
-		raw := `{"is_anonymous":false,"user_id":1,"username":"x","is_verified":false,"profile_picture":"","channel_slug":"","identity":{"username_color":"#fff","badges":[]}}`
+		raw := `{"is_anonymous":false,"user_id":1,"username":"x","is_verified":false,` +
+			`"profile_picture":"","channel_slug":"","identity":{"username_color":"#fff","badges":[]}}`
 		require.NoError(t, json.Unmarshal([]byte(raw), &u))
 		require.NotNil(t, u.Identity)
 		assert.Equal(t, "#fff", u.Identity.UsernameColor)
@@ -444,6 +445,27 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 				assert.IsType(t, testCase.expectedType, event)
 			})
 		}
+	})
+
+	t.Run("livestream metadata updated category id is JSON number", func(t *testing.T) {
+		skipSignatureValidation(t)
+
+		body := `{"broadcaster":{"is_anonymous":false,"user_id":1,"username":"x","is_verified":false,` +
+			`"profile_picture":"","channel_slug":"x"},"metadata":{"title":"t","language":"en",` +
+			`"has_mature_content":false,"category":{"id":15,"name":"Gaming","thumbnail":"https://example.com/t.png"}}}`
+
+		event, err := gokick.ValidateAndParseEvent(
+			gokick.SubscriptionNameLivestreamMetadataUpdated,
+			"1",
+			"signature",
+			"message ID",
+			"2025-02-21T23:23:36Z",
+			body,
+		)
+		require.NoError(t, err)
+		ev := event.(*gokick.LivestreamMetadataUpdatedEvent)
+		assert.Equal(t, 15, ev.Metadata.Category.ID)
+		assert.Equal(t, "Gaming", ev.Metadata.Category.Name)
 	})
 }
 
