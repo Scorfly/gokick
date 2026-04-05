@@ -4,9 +4,27 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"unicode/utf8"
 )
+
+// ChatMessageContentMaxRunes is the maximum length of chat message content accepted by Kick's API.
+const ChatMessageContentMaxRunes = 500
+
+// ErrChatMessageContentTooLong is returned by SendChatMessage when content is longer than
+// ChatMessageContentMaxRunes Unicode code points.
+var ErrChatMessageContentTooLong = errors.New("gokick: chat message content exceeds 500 characters (API limit)")
+
+// ValidateChatMessageContent returns ErrChatMessageContentTooLong if content has more than
+// ChatMessageContentMaxRunes Unicode code points; otherwise nil.
+func ValidateChatMessageContent(content string) error {
+	if utf8.RuneCountInString(content) > ChatMessageContentMaxRunes {
+		return ErrChatMessageContentTooLong
+	}
+	return nil
+}
 
 type ChatResponseWrapper Response[ChatResponse]
 
@@ -22,6 +40,11 @@ func (c *Client) SendChatMessage(
 	replyToMessageID *string,
 	messageType MessageType,
 ) (ChatResponseWrapper, error) {
+	err := ValidateChatMessageContent(content)
+	if err != nil {
+		return ChatResponseWrapper{}, err
+	}
+
 	type postBodyRequest struct {
 		BroadcasterUserID int    `json:"broadcaster_user_id,omitempty"`
 		Content           string `json:"content"`
