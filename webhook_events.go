@@ -124,11 +124,12 @@ type KicksGiftedEvent struct {
 	Broadcaster UserEvent `json:"broadcaster"`
 	Sender      UserEvent `json:"sender"`
 	Gift        struct {
-		Amount  int    `json:"amount"`
-		Name    string `json:"name"`
-		Type    string `json:"type"`
-		Tier    string `json:"tier"`
-		Message string `json:"message"`
+		Amount            int    `json:"amount"`
+		Name              string `json:"name"`
+		Type              string `json:"type"`
+		Tier              string `json:"tier"`
+		Message           string `json:"message"`
+		PinnedTimeSeconds int    `json:"pinned_time_seconds"`
 	} `json:"gift"`
 	CreatedAt string `json:"created_at"`
 }
