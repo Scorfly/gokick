@@ -37,7 +37,7 @@ type UserEvent struct {
 }
 
 type ChatMessageEmotesEvent struct {
-	EmoteID   int `json:"emote_id"`
+	EmoteID   json.Number `json:"emote_id"`
 	Positions []struct {
 		Start int `json:"s"`
 		End   int `json:"e"`

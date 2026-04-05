@@ -1,6 +1,7 @@
 package gokick_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -10,6 +11,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestChatMessageEmotesEvent_EmoteID_Unmarshal(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want string
+	}{
+		{"string", `{"emote_id":"42","positions":[]}`, "42"},
+		{"number", `{"emote_id":42,"positions":[]}`, "42"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var e gokick.ChatMessageEmotesEvent
+			require.NoError(t, json.Unmarshal([]byte(tt.raw), &e))
+			assert.Equal(t, tt.want, e.EmoteID.String())
+		})
+	}
+}
 
 func TestGetEventFromRequestError(t *testing.T) {
 	t.Run("request not set", func(t *testing.T) {
