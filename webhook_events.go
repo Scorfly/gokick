@@ -224,14 +224,15 @@ func ValidateEvent(
 	body []byte,
 ) bool {
 	if !SkipSignatureValidation {
+		_, _, sig, msgID, ts := webhookRequestMeta(header)
 		payload := struct {
 			signature string
 			messageID string
 			timestamp string
 		}{
-			signature: header.Get("Kick-Event-Signature"),
-			messageID: header.Get("Kick-Event-Message-Id"),
-			timestamp: header.Get("Kick-Event-Message-Timestamp"),
+			signature: sig,
+			messageID: msgID,
+			timestamp: ts,
 		}
 
 		signature := bytes.Join([][]byte{
