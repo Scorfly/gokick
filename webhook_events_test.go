@@ -17,10 +17,19 @@ func TestGetEventFromRequestError(t *testing.T) {
 		require.EqualError(t, err, "request cannot be nil")
 	})
 
-	t.Run("invalid subscription name", func(t *testing.T) {
+	t.Run("invalid subscription name (legacy X-Event headers)", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
 		require.NoError(t, err)
 		req.Header.Set("X-Event-Subscription", "invalid")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to parse subscription name: unknown name: invalid")
+	})
+
+	t.Run("invalid subscription name (Kick-Event-Type)", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Type", "invalid")
 
 		_, err = gokick.GetEventFromRequest(req)
 		require.EqualError(t, err, "failed to parse subscription name: unknown name: invalid")
@@ -48,17 +57,48 @@ func TestGetEventFromRequestError(t *testing.T) {
 func TestGetEventFromRequestSuccess(t *testing.T) {
 	skipSignatureValidation(t)
 
-	req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader("{}"))
-	require.NoError(t, err)
-	req.Header.Set("X-Event-Subscription", "chat.message.sent")
-	req.Header.Set("X-Event-Version", "1")
-	req.Header.Set("X-Event-Signature", "signature")
-	req.Header.Set("X-Event-Message-Id", "message ID")
-	req.Header.Set("X-Event-Timestamp", "2025-02-21T23:23:36Z")
+	t.Run("legacy X-Event headers", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader("{}"))
+		require.NoError(t, err)
+		req.Header.Set("X-Event-Subscription", "chat.message.sent")
+		req.Header.Set("X-Event-Version", "1")
+		req.Header.Set("X-Event-Signature", "signature")
+		req.Header.Set("X-Event-Message-Id", "message ID")
+		req.Header.Set("X-Event-Timestamp", "2025-02-21T23:23:36Z")
 
-	event, err := gokick.GetEventFromRequest(req)
-	require.NoError(t, err)
-	assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+		event, err := gokick.GetEventFromRequest(req)
+		require.NoError(t, err)
+		assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+	})
+
+	t.Run("Kick-Event headers", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "https://domain.tld/webhook", strings.NewReader("{}"))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Type", "chat.message.sent")
+		req.Header.Set("Kick-Event-Version", "1")
+		req.Header.Set("Kick-Event-Signature", "signature")
+		req.Header.Set("Kick-Event-Message-Id", "01JMND5PSxxxxxx")
+		req.Header.Set("Kick-Event-Message-Timestamp", "2025-02-21T23:23:36Z")
+
+		event, err := gokick.GetEventFromRequest(req)
+		require.NoError(t, err)
+		assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+	})
+
+	t.Run("Kick-Event-Type wins over X-Event-Subscription", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "https://domain.tld/webhook", strings.NewReader("{}"))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Type", "chat.message.sent")
+		req.Header.Set("X-Event-Subscription", "channel.followed")
+		req.Header.Set("Kick-Event-Version", "1")
+		req.Header.Set("Kick-Event-Signature", "signature")
+		req.Header.Set("Kick-Event-Message-Id", "id")
+		req.Header.Set("Kick-Event-Message-Timestamp", "2025-02-21T23:23:36Z")
+
+		event, err := gokick.GetEventFromRequest(req)
+		require.NoError(t, err)
+		assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+	})
 }
 
 func TestValidateEventError(t *testing.T) {
