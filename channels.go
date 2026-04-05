@@ -28,13 +28,15 @@ type StreamResponse struct {
 }
 
 type ChannelResponse struct {
-	BannerPicture      string           `json:"banner_picture"`
-	BroadcasterUserID  int              `json:"broadcaster_user_id"`
-	Category           CategoryResponse `json:"category"`
-	ChannelDescription string           `json:"channel_description"`
-	Slug               string           `json:"slug"`
-	Stream             StreamResponse   `json:"stream"`
-	StreamTitle        string           `json:"stream_title"`
+	ActiveSubscribersCount   int              `json:"active_subscribers_count"`
+	BannerPicture            string           `json:"banner_picture"`
+	BroadcasterUserID        int              `json:"broadcaster_user_id"`
+	CanceledSubscribersCount int              `json:"canceled_subscribers_count"`
+	Category                 CategoryResponse `json:"category"`
+	ChannelDescription       string           `json:"channel_description"`
+	Slug                     string           `json:"slug"`
+	Stream                   StreamResponse   `json:"stream"`
+	StreamTitle              string           `json:"stream_title"`
 }
 
 type ChannelRewardResponse struct {
