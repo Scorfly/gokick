@@ -11,6 +11,8 @@
 	}
 ```
 
+`ValidateEvent` (and request helpers that read webhook metadata) accept both **`Kick-Event-*`** headers and legacy **`X-Event-*`** names for compatibility.
+
 ## Validate and parse event
 
 Headers
@@ -31,8 +33,8 @@ Headers
 	response, _ := gokick.ValidateAndParseEvent(
 		subscriptionName,
 		"1",                                                                // value from "Kick-Event-Version" header
-		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",                          // value from "Kick-Event-Version" header
-		"01JMND5PSxxxxxx",
+		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",                          // value from "Kick-Event-Signature" header
+		"01JMND5PSxxxxxx",                                                  // value from "Kick-Event-Message-Id" header
 		"2025-02-21T23:23:36Z",                                             // value from "Kick-Event-Message-Timestamp" header
 		`{"message_id":"bb9832e4-e865-48f4…"content":"Test [emote:39261:kkHuh] test[emote:39265:EDMusiC]","emotes":null}`,
 	)
@@ -105,7 +107,7 @@ output
 		"EINDkB8ZBed…bCdBLuguc8yfAjXKEvtvVNfhQ==",
 		"01JMND5PSxxxxxx",
 		"2025-02-21T23:23:36Z",
-		`{"broadcaster":{...},"sender":{...},"gift":{"amount":100,"name":"Kick","type":"kick","tier":"1","message":"Thanks!"},"created_at":"2025-02-21T23:23:36Z"}`,
+		`{"broadcaster":{...},"sender":{...},"gift":{"amount":100,"name":"Kick","type":"kick","tier":"1","message":"Thanks!","pinned_time_seconds":3600},"created_at":"2025-02-21T23:23:36Z"}`,
 	)
 
 	event := response.(*gokick.KicksGiftedEvent)

@@ -18,8 +18,10 @@ output
 (gokick.ChannelsResponseWrapper) {
  Result: ([]gokick.ChannelResponse) (len=1 cap=1) {
   (gokick.ChannelResponse) {
+   ActiveSubscribersCount: (int) 120,
    BannerPicture: (string) (len=78) "https://files.kick.com/images/channel/700014/banner_image/default-banner-2.jpg",
    BroadcasterUserID: (int) 721956,
+   CanceledSubscribersCount: (int) 4,
    Category: (gokick.CategoryResponse) {
     ID: (int) 0,
     Name: (string) "",

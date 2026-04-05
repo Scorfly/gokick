@@ -49,7 +49,7 @@ func main() {
     }
 
     // Get categories
-    categories, err := client.GetCategories(context.Background())
+    categories, err := client.GetCategories(context.Background(), gokick.NewCategoryListFilter())
     if err != nil {
         panic(err)
     }
