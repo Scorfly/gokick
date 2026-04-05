@@ -30,6 +30,22 @@ func TestChatMessageEmotesEvent_EmoteID_Unmarshal(t *testing.T) {
 	}
 }
 
+func TestUserEvent_Identity_Unmarshal(t *testing.T) {
+	t.Run("null", func(t *testing.T) {
+		var u gokick.UserEvent
+		raw := `{"is_anonymous":false,"user_id":1,"username":"x","is_verified":false,"profile_picture":"","channel_slug":"","identity":null}`
+		require.NoError(t, json.Unmarshal([]byte(raw), &u))
+		assert.Nil(t, u.Identity)
+	})
+	t.Run("object", func(t *testing.T) {
+		var u gokick.UserEvent
+		raw := `{"is_anonymous":false,"user_id":1,"username":"x","is_verified":false,"profile_picture":"","channel_slug":"","identity":{"username_color":"#fff","badges":[]}}`
+		require.NoError(t, json.Unmarshal([]byte(raw), &u))
+		require.NotNil(t, u.Identity)
+		assert.Equal(t, "#fff", u.Identity.UsernameColor)
+	})
+}
+
 func TestGetEventFromRequestError(t *testing.T) {
 	t.Run("request not set", func(t *testing.T) {
 		_, err := gokick.GetEventFromRequest(nil)

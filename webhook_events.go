@@ -33,7 +33,7 @@ type UserEvent struct {
 	IsVerified     bool          `json:"is_verified"`
 	ProfilePicture string        `json:"profile_picture"`
 	ChannelSlug    string        `json:"channel_slug"`
-	Identity       IdentityEvent `json:"identity"`
+	Identity       *IdentityEvent `json:"identity"`
 }
 
 type ChatMessageEmotesEvent struct {
