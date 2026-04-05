@@ -71,7 +71,7 @@ func TestGetEventFromRequestError(t *testing.T) {
 		require.EqualError(t, err, "failed to parse subscription name: unknown name: invalid")
 	})
 
-	t.Run("invalid body", func(t *testing.T) {
+	t.Run("invalid body (legacy X-Event headers)", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "https://domain.tld", faultyReader{})
 		require.NoError(t, err)
 		req.Header.Set("X-Event-Subscription", "chat.message.sent")
@@ -80,10 +80,28 @@ func TestGetEventFromRequestError(t *testing.T) {
 		require.EqualError(t, err, "failed to read body: read error")
 	})
 
-	t.Run("cannot parse event", func(t *testing.T) {
+	t.Run("invalid body (Kick-Event headers)", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "https://domain.tld/webhook", faultyReader{})
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Type", "chat.message.sent")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to read body: read error")
+	})
+
+	t.Run("cannot parse event (legacy X-Event headers)", func(t *testing.T) {
 		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
 		require.NoError(t, err)
 		req.Header.Set("X-Event-Subscription", "chat.message.sent")
+
+		_, err = gokick.GetEventFromRequest(req)
+		require.EqualError(t, err, "failed to verify event validity: failed to verify signature: crypto/rsa: verification error")
+	})
+
+	t.Run("cannot parse event (Kick-Event headers)", func(t *testing.T) {
+		req, err := http.NewRequest("POST", "https://domain.tld/webhook", strings.NewReader(""))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Type", "chat.message.sent")
 
 		_, err = gokick.GetEventFromRequest(req)
 		require.EqualError(t, err, "failed to verify event validity: failed to verify signature: crypto/rsa: verification error")
@@ -143,29 +161,48 @@ func TestValidateEventError(t *testing.T) {
 
 	gokick.DefaultEventPublicKey = "invalid key"
 
-	headers := http.Header{}
-	headers.Set("Kick-Event-Message-Id", "msg123")
+	t.Run("Kick-Event headers", func(t *testing.T) {
+		headers := http.Header{}
+		headers.Set("Kick-Event-Message-Id", "msg123")
 
-	valid := gokick.ValidateEvent(headers, []byte("body"))
-	assert.False(t, valid)
+		valid := gokick.ValidateEvent(headers, []byte("body"))
+		assert.False(t, valid)
+	})
+
+	t.Run("legacy X-Event headers", func(t *testing.T) {
+		headers := http.Header{}
+		headers.Set("X-Event-Message-Id", "msg123")
+
+		valid := gokick.ValidateEvent(headers, []byte("body"))
+		assert.False(t, valid)
+	})
 }
 
 func TestValidateEventSuccess(t *testing.T) {
-	skipSignatureValidation(t)
+	body := []byte(`{"message_id":"bb9832e4-e865-48f4-a0c3-392f78bf3b1a","broadcaster":{"is_anonymous":false,"user_id":721956,` +
+		`"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/profile_image/` +
+		`conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},"sender":{"is_anonymous":false,` +
+		`"user_id":721956,"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/` +
+		`profile_image/conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},` +
+		`"content":"coucou","emotes":null}`)
 
-	headers := http.Header{}
-	headers.Set("Kick-Event-Message-Id", "msg123")
+	t.Run("Kick-Event headers", func(t *testing.T) {
+		skipSignatureValidation(t)
 
-	valid := gokick.ValidateEvent(
-		headers,
-		[]byte(`{"message_id":"bb9832e4-e865-48f4-a0c3-392f78bf3b1a","broadcaster":{"is_anonymous":false,"user_id":721956,`+
-			`"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/profile_image/`+
-			`conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},"sender":{"is_anonymous":false,`+
-			`"user_id":721956,"username":"Scorfly","is_verified":false,"profile_picture":"https://files.kick.com/images/user/721956/`+
-			`profile_image/conversion/44a9f1fb-0498-47b5-820e-ef9399fd23d4-fullsize.webp","channel_slug":"scorfly"},`+
-			`"content":"coucou","emotes":null}`),
-	)
-	assert.True(t, valid)
+		headers := http.Header{}
+		headers.Set("Kick-Event-Message-Id", "msg123")
+
+		assert.True(t, gokick.ValidateEvent(headers, body))
+	})
+
+	t.Run("legacy X-Event headers", func(t *testing.T) {
+		skipSignatureValidation(t)
+
+		headers := http.Header{}
+		headers.Set("X-Event-Message-Id", "msg123")
+
+		assert.True(t, gokick.ValidateEvent(headers, body))
+	})
 }
 
 func TestValidateAndParseEventError(t *testing.T) {
