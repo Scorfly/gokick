@@ -160,7 +160,7 @@ make lint
 
 ### Requirements
 
-- Go 1.25.5 or later
+- Go 1.26.1 or later
 
 ## Kick API Documentation
 
