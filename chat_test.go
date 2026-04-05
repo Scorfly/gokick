@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/scorfly/gokick"
@@ -11,7 +13,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestValidateChatMessageContent(t *testing.T) {
+	t.Run("within limit", func(t *testing.T) {
+		require.NoError(t, gokick.ValidateChatMessageContent(""))
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxRunes)))
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("é", gokick.ChatMessageContentMaxRunes)))
+	})
+	t.Run("over limit", func(t *testing.T) {
+		err := gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxRunes+1))
+		require.ErrorIs(t, err, gokick.ErrChatMessageContentTooLong)
+	})
+}
+
 func TestSendChatMessageError(t *testing.T) {
+	t.Run("content too long", func(t *testing.T) {
+		var called bool
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(server.Close)
+
+		client, err := gokick.NewClient(&gokick.ClientOptions{
+			UserAccessToken: "access-token",
+			APIBaseURL:      fmt.Sprintf("http://%s", server.Listener.Addr()),
+		})
+		require.NoError(t, err)
+
+		_, err = client.SendChatMessage(
+			context.Background(),
+			nil,
+			strings.Repeat("x", gokick.ChatMessageContentMaxRunes+1),
+			nil,
+			gokick.MessageTypeBot,
+		)
+		require.ErrorIs(t, err, gokick.ErrChatMessageContentTooLong)
+		assert.False(t, called)
+	})
+
 	t.Run("on new request", func(t *testing.T) {
 		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
 		require.NoError(t, err)
@@ -121,6 +160,27 @@ func TestSendChatMessageSuccess(t *testing.T) {
 			assert.Equal(t, "message id", resonse.Result.MessageID)
 		})
 	}
+
+	t.Run("at max content length", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"message":"success",
+				"data":{"is_sent":true, "message_id":"message id"}
+			}`)
+		})
+
+		msg := strings.Repeat("x", gokick.ChatMessageContentMaxRunes)
+		response, err := kickClient.SendChatMessage(
+			context.Background(),
+			nil,
+			msg,
+			nil,
+			gokick.MessageTypeBot,
+		)
+		require.NoError(t, err)
+		assert.True(t, response.Result.IsSent)
+	})
 }
 
 func TestDeleteChatMessageError(t *testing.T) {
