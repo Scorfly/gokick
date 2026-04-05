@@ -21,8 +21,12 @@ func TestNewLivestreamListFilterSuccess(t *testing.T) {
 			expectedQueryString: "",
 		},
 		"with broadcaster user ID": {
-			filter:              gokick.NewLivestreamListFilter().SetBroadcasterUserIDs(118),
+			filter:              gokick.NewLivestreamListFilter().SetBroadcasterUserIDs([]int{118}),
 			expectedQueryString: "?broadcaster_user_id=118",
+		},
+		"with multiple broadcaster user IDs": {
+			filter:              gokick.NewLivestreamListFilter().SetBroadcasterUserIDs([]int{118, 218}),
+			expectedQueryString: "?broadcaster_user_id=118&broadcaster_user_id=218",
 		},
 		"with category ID": {
 			filter:              gokick.NewLivestreamListFilter().SetCategoryID(218),
@@ -46,7 +50,7 @@ func TestNewLivestreamListFilterSuccess(t *testing.T) {
 		},
 		"with all params": {
 			filter: gokick.NewLivestreamListFilter().
-				SetBroadcasterUserIDs(118).
+				SetBroadcasterUserIDs([]int{118}).
 				SetCategoryID(218).
 				SetLanguage("fr").
 				SetLimit(117).
