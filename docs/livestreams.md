@@ -42,6 +42,19 @@ output
 }
 ```
 
+### Filter by multiple broadcaster user IDs
+
+The query repeats `broadcaster_user_id` once per id. The response shape is the same as in the example above.
+
+```go
+	response, err := client.GetLivestreams(context.Background(), gokick.NewLivestreamListFilter().SetBroadcasterUserIDs([]int{30111, 30222}).SetLimit(10))
+	if err != nil {
+		log.Fatalf("Failed to fetch response: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+
 ## Get Livestreams Stats
 
 ```go

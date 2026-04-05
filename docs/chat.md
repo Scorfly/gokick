@@ -1,3 +1,13 @@
+## Message length
+
+Kick’s API accepts at most **500 Unicode code points** per message body. `SendChatMessage` returns `gokick.ErrChatMessageContentTooLong` if `content` is longer. You can validate up front with `gokick.ValidateChatMessageContent` (same rule as `gokick.ChatMessageContentMaxRunes`).
+
+```go
+	if err := gokick.ValidateChatMessageContent(longText); err != nil {
+		log.Fatal(err)
+	}
+```
+
 ## Post Chat Message
 
 ```go
