@@ -68,19 +68,32 @@ func TestClientRefreshTokenError(t *testing.T) {
 }
 
 type mockRoundTripperRefreshTokenOK struct {
-	code int
+	calls int
 }
 
 func (c *mockRoundTripperRefreshTokenOK) RoundTrip(req *http.Request) (*http.Response, error) {
-	code := c.code
-	c.code = http.StatusOK
-
-	return &http.Response{
-		StatusCode: code,
-		Body: io.NopCloser(bytes.NewBufferString(`{
+	c.calls++
+	if c.calls == 1 {
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Body:       io.NopCloser(bytes.NewBufferString(`{"message":"unauthorized"}`)),
+		}, nil
+	}
+	if c.calls == 2 {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(bytes.NewBufferString(`{
 			"access_token":"access-token",
 			"expires_in":7200,
 			"token_type":"Bearer"
+		}`)),
+		}, nil
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body: io.NopCloser(bytes.NewBufferString(`{
+			"data":[{"id":117,"name":"ok","thumbnail":"t"}],
+			"pagination":{"next_cursor":""}
 		}`)),
 	}, nil
 }
@@ -88,9 +101,7 @@ func (c *mockRoundTripperRefreshTokenOK) RoundTrip(req *http.Request) (*http.Res
 func TestClientRefreshTokenSuccess(t *testing.T) {
 	t.Run("on new request", func(t *testing.T) {
 		client := &http.Client{
-			Transport: &mockRoundTripperRefreshTokenOK{
-				code: http.StatusUnauthorized,
-			},
+			Transport: &mockRoundTripperRefreshTokenOK{},
 		}
 
 		kickClient, err := gokick.NewClient(&gokick.ClientOptions{
