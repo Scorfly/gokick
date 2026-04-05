@@ -117,7 +117,7 @@ type ModerationBannedEvent struct {
 		Reason    string `json:"reason"`
 		CreatedAt string `json:"created_at"`
 		ExpiresAt string `json:"expires_at"`
-	} `json:"reason"`
+	} `json:"metadata"`
 }
 
 type KicksGiftedEvent struct {
