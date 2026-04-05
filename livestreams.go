@@ -40,8 +40,10 @@ func NewLivestreamListFilter() LivestreamListFilter {
 	return LivestreamListFilter{queryParams: make(url.Values)}
 }
 
-func (f LivestreamListFilter) SetBroadcasterUserIDs(id int) LivestreamListFilter {
-	f.queryParams.Add("broadcaster_user_id", fmt.Sprintf("%d", id))
+func (f LivestreamListFilter) SetBroadcasterUserIDs(ids []int) LivestreamListFilter {
+	for i := range ids {
+		f.queryParams.Add("broadcaster_user_id", fmt.Sprintf("%d", ids[i]))
+	}
 
 	return f
 }
