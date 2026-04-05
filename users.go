@@ -58,11 +58,12 @@ func (f UserListFilter) ToQueryString() string {
 }
 
 func (c *Client) TokenIntrospect(ctx context.Context) (TokenIntrospectResponseWrapper, error) {
-	response, err := makeRequest[TokenIntrospectResponse](
+	response, err := makeRequestWithBaseURL[TokenIntrospectResponse](
 		ctx,
 		c,
+		c.options.AuthBaseURL,
 		http.MethodPost,
-		"/public/v1/token/introspect",
+		"/oauth/token/introspect",
 		http.StatusOK,
 		http.NoBody,
 	)

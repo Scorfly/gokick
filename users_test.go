@@ -51,12 +51,12 @@ func TestTokenIntrospectError(t *testing.T) {
 		kickClient := setupTimeoutMockClient(t)
 
 		_, err := kickClient.TokenIntrospect(context.Background())
-		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/token/introspect": context deadline exceeded `+
+		require.EqualError(t, err, `failed to make request: Post "https://id.kick.com/oauth/token/introspect": context deadline exceeded `+
 			`(Client.Timeout exceeded while awaiting headers)`)
 	})
 
 	t.Run("unmarshal error response", func(t *testing.T) {
-		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		kickClient := setupMockOAuthHostClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, `117`)
 		})
@@ -68,7 +68,7 @@ func TestTokenIntrospectError(t *testing.T) {
 	})
 
 	t.Run("unmarshal token response", func(t *testing.T) {
-		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		kickClient := setupMockOAuthHostClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "117")
 		})
@@ -80,7 +80,7 @@ func TestTokenIntrospectError(t *testing.T) {
 	})
 
 	t.Run("reader failure", func(t *testing.T) {
-		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		kickClient := setupMockOAuthHostClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Length", "10")
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "")
@@ -92,7 +92,7 @@ func TestTokenIntrospectError(t *testing.T) {
 	})
 
 	t.Run("with internal server error", func(t *testing.T) {
-		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		kickClient := setupMockOAuthHostClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
 		})
@@ -107,7 +107,7 @@ func TestTokenIntrospectError(t *testing.T) {
 }
 
 func TestTokenIntrospectSuccess(t *testing.T) {
-	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+	kickClient := setupMockOAuthHostClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{
 			"message":"success",

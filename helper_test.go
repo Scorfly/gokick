@@ -26,6 +26,22 @@ func setupMockClient(t *testing.T, mockHandler http.HandlerFunc) *gokick.Client 
 	return kickClient
 }
 
+// setupMockOAuthHostClient mocks id.kick.com (AuthBaseURL) for OAuth-only calls such as TokenIntrospect.
+func setupMockOAuthHostClient(t *testing.T, mockHandler http.HandlerFunc) *gokick.Client {
+	t.Helper()
+
+	server := httptest.NewServer(mockHandler)
+	kickClient, err := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "access-token",
+		AuthBaseURL:     fmt.Sprintf("http://%s", server.Listener.Addr()),
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() { server.Close() })
+
+	return kickClient
+}
+
 func setupMockAuthClient(t *testing.T, mockHandler http.HandlerFunc) *gokick.Client {
 	t.Helper()
 

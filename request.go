@@ -8,6 +8,50 @@ import (
 	"net/http"
 )
 
+func kickErrorFromResponse(statusCode int, responseBody []byte) error {
+	var apiErr errorResponse
+	apiUnmarshalErr := json.Unmarshal(responseBody, &apiErr)
+	if apiUnmarshalErr != nil {
+		return fmt.Errorf(
+			"failed to unmarshal error response (KICK status code: %d and body %q): %v",
+			statusCode,
+			string(responseBody),
+			apiUnmarshalErr,
+		)
+	}
+	if apiErr.Message != "" {
+		return NewError(statusCode, apiErr.Message)
+	}
+
+	var oauthErr authErrorResponse
+	oauthUnmarshalErr := json.Unmarshal(responseBody, &oauthErr)
+	if oauthUnmarshalErr != nil {
+		return fmt.Errorf(
+			"failed to unmarshal error response (KICK status code: %d and body %q): %v",
+			statusCode,
+			string(responseBody),
+			oauthUnmarshalErr,
+		)
+	}
+	msg := oauthErr.Message
+	if msg == "" {
+		msg = oauthErr.Error
+	}
+	if msg != "" {
+		e := NewError(statusCode, msg)
+		if oauthErr.ErrorDescription != "" {
+			e = e.WithDescription(oauthErr.ErrorDescription)
+		}
+		return e
+	}
+
+	return fmt.Errorf(
+		"failed to unmarshal error response (KICK status code: %d and body %q): empty error message",
+		statusCode,
+		string(responseBody),
+	)
+}
+
 func makeRequest[T any](
 	ctx context.Context,
 	request *Client,
@@ -16,7 +60,19 @@ func makeRequest[T any](
 	statusCode int,
 	body io.Reader,
 ) (Response[T], error) {
-	url := request.buildURL(request.options.APIBaseURL, path)
+	return makeRequestWithBaseURL[T](ctx, request, request.options.APIBaseURL, method, path, statusCode, body)
+}
+
+func makeRequestWithBaseURL[T any](
+	ctx context.Context,
+	request *Client,
+	baseURL string,
+	method string,
+	path string,
+	statusCode int,
+	body io.Reader,
+) (Response[T], error) {
+	url := request.buildURL(baseURL, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
@@ -41,19 +97,7 @@ func makeRequest[T any](
 	}
 
 	if resp.StatusCode != statusCode {
-		var errorOutput errorResponse
-
-		err = json.Unmarshal(responseBody, &errorOutput)
-		if err != nil {
-			return Response[T]{}, fmt.Errorf(
-				"failed to unmarshal error response (KICK status code: %d and body %q): %v",
-				resp.StatusCode,
-				string(responseBody),
-				err,
-			)
-		}
-
-		return Response[T]{}, NewError(resp.StatusCode, errorOutput.Message)
+		return Response[T]{}, kickErrorFromResponse(resp.StatusCode, responseBody)
 	}
 
 	type successResponse struct {
