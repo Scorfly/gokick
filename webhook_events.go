@@ -165,20 +165,43 @@ twIDAQAB
 // Do not override it in production !
 var SkipSignatureValidation = false
 
+// webhookRequestMeta reads Kick webhook headers per https://docs.kick.com/events/event-types.md,
+// with fallback to legacy X-Event-* names used by older examples.
+func webhookRequestMeta(h http.Header) (eventName, version, signature, messageID, timestamp string) {
+	eventName = h.Get("Kick-Event-Type")
+	if eventName == "" {
+		eventName = h.Get("X-Event-Subscription")
+	}
+	version = h.Get("Kick-Event-Version")
+	if version == "" {
+		version = h.Get("X-Event-Version")
+	}
+	signature = h.Get("Kick-Event-Signature")
+	if signature == "" {
+		signature = h.Get("X-Event-Signature")
+	}
+	messageID = h.Get("Kick-Event-Message-Id")
+	if messageID == "" {
+		messageID = h.Get("X-Event-Message-Id")
+	}
+	timestamp = h.Get("Kick-Event-Message-Timestamp")
+	if timestamp == "" {
+		timestamp = h.Get("X-Event-Timestamp")
+	}
+	return eventName, version, signature, messageID, timestamp
+}
+
 func GetEventFromRequest(request *http.Request) (interface{}, error) {
 	if request == nil {
 		return nil, errors.New("request cannot be nil")
 	}
 
-	subscriptionName, err := NewSubscriptionName(request.Header.Get("X-Event-Subscription"))
+	eventName, version, eventSignature, messageID, timestamp := webhookRequestMeta(request.Header)
+
+	subscriptionName, err := NewSubscriptionName(eventName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse subscription name: %v", err)
 	}
-
-	version := request.Header.Get("X-Event-Version")
-	eventSignature := request.Header.Get("X-Event-Signature")
-	messageID := request.Header.Get("X-Event-Message-Id")
-	timestamp := request.Header.Get("X-Event-Timestamp")
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
