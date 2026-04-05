@@ -284,7 +284,8 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 					"name": "Full Send",
 					"type": "BASIC",
 					"tier": "BASIC",
-					"message": "w"
+					"message": "w",
+					"pinned_time_seconds": 600
 				},
 				"created_at": "2025-10-20T04:00:08.634Z"
 			}`,
@@ -308,6 +309,7 @@ func TestValidateAndParseEventSuccess(t *testing.T) {
 		assert.Equal(t, "BASIC", kicksEvent.Gift.Type)
 		assert.Equal(t, "BASIC", kicksEvent.Gift.Tier)
 		assert.Equal(t, "w", kicksEvent.Gift.Message)
+		assert.Equal(t, 600, kicksEvent.Gift.PinnedTimeSeconds)
 		assert.Equal(t, "2025-10-20T04:00:08.634Z", kicksEvent.CreatedAt)
 	})
 
