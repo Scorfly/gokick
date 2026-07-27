@@ -1079,3 +1079,454 @@ func TestDeleteChannelRewardSuccess(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestNewChannelRewardRedemptionListFilterSuccess(t *testing.T) {
+	testCases := map[string]struct {
+		filter              gokick.ChannelRewardRedemptionListFilter
+		expectedQueryString string
+	}{
+		"default": {
+			filter:              gokick.NewChannelRewardRedemptionListFilter(),
+			expectedQueryString: "",
+		},
+		"with reward_id": {
+			filter:              gokick.NewChannelRewardRedemptionListFilter().SetRewardID("01HZREWARD"),
+			expectedQueryString: "?reward_id=01HZREWARD",
+		},
+		"with status": {
+			filter: gokick.NewChannelRewardRedemptionListFilter().
+				SetStatus(gokick.ChannelRewardRedemptionStatusAccepted),
+			expectedQueryString: "?status=accepted",
+		},
+		"with cursor": {
+			filter:              gokick.NewChannelRewardRedemptionListFilter().SetCursor("abc123"),
+			expectedQueryString: "?cursor=abc123",
+		},
+		"with single id": {
+			filter:              gokick.NewChannelRewardRedemptionListFilter().AddID("01HZRED1"),
+			expectedQueryString: "?id=01HZRED1",
+		},
+		"with multiple ids": {
+			filter: gokick.NewChannelRewardRedemptionListFilter().
+				AddID("01HZRED1").
+				AddID("01HZRED2"),
+			expectedQueryString: "?id=01HZRED1&id=01HZRED2",
+		},
+		"with reward_id status and cursor": {
+			filter: gokick.NewChannelRewardRedemptionListFilter().
+				SetRewardID("01HZREWARD").
+				SetStatus(gokick.ChannelRewardRedemptionStatusPending).
+				SetCursor("next"),
+			expectedQueryString: "?cursor=next&reward_id=01HZREWARD&status=pending",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedQueryString, tc.filter.ToQueryString())
+		})
+	}
+}
+
+func TestGetChannelRewardRedemptionsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.GetChannelRewardRedemptions(ctx, gokick.NewChannelRewardRedemptionListFilter())
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/channels/rewards/redemptions": `+
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal redemptions response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.PaginatedResponse[[]github.com/scorfly/gokick.RedemptionsByReward]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestGetChannelRewardRedemptionsSuccess(t *testing.T) {
+	t.Run("when result is empty", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"data":[], "message":"text", "pagination":{"next_cursor":""}}`)
+		})
+
+		response, err := kickClient.GetChannelRewardRedemptions(context.Background(), gokick.NewChannelRewardRedemptionListFilter())
+		require.NoError(t, err)
+		assert.Empty(t, response.Result)
+		assert.Empty(t, response.Pagination.NextCursor)
+	})
+
+	t.Run("when result is filled", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodGet, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards/redemptions", r.URL.Path)
+			assert.Equal(t, "01HZREWARD", r.URL.Query().Get("reward_id"))
+			assert.Equal(t, "pending", r.URL.Query().Get("status"))
+			assert.Equal(t, "next-page", r.URL.Query().Get("cursor"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": [{
+					"reward": {
+						"id": "01HZREWARD",
+						"title": "Song Request",
+						"cost": 100,
+						"description": "Request a song",
+						"can_manage": true,
+						"is_deleted": false
+					},
+					"redemptions": [{
+						"id": "01HZRED1",
+						"redeemed_at": "2025-02-21T23:23:36Z",
+						"redeemer": {"user_id": 117},
+						"status": "pending",
+						"user_input": "https://example.com/song"
+					}]
+				}],
+				"message": "text",
+				"pagination": {"next_cursor": "cursor-2"}
+			}`)
+		})
+
+		response, err := kickClient.GetChannelRewardRedemptions(
+			context.Background(),
+			gokick.NewChannelRewardRedemptionListFilter().
+				SetRewardID("01HZREWARD").
+				SetStatus(gokick.ChannelRewardRedemptionStatusPending).
+				SetCursor("next-page"),
+		)
+		require.NoError(t, err)
+		require.Len(t, response.Result, 1)
+		assert.Equal(t, "cursor-2", response.Pagination.NextCursor)
+
+		reward := response.Result[0].Reward
+		assert.Equal(t, "01HZREWARD", reward.ID)
+		assert.Equal(t, "Song Request", reward.Title)
+		require.NotNil(t, reward.Cost)
+		assert.Equal(t, 100, *reward.Cost)
+		require.NotNil(t, reward.Description)
+		assert.Equal(t, "Request a song", *reward.Description)
+		require.NotNil(t, reward.CanManage)
+		assert.True(t, *reward.CanManage)
+		require.NotNil(t, reward.IsDeleted)
+		assert.False(t, *reward.IsDeleted)
+
+		require.Len(t, response.Result[0].Redemptions, 1)
+		redemption := response.Result[0].Redemptions[0]
+		assert.Equal(t, "01HZRED1", redemption.ID)
+		assert.Equal(t, "2025-02-21T23:23:36Z", redemption.RedeemedAt)
+		assert.Equal(t, 117, redemption.Redeemer.UserID)
+		assert.Equal(t, "pending", redemption.Status)
+		assert.Equal(t, "https://example.com/song", redemption.UserInput)
+	})
+
+	t.Run("when filtering by redemption ids", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, []string{"01HZRED1", "01HZRED2"}, r.URL.Query()["id"])
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": [{
+					"reward": {"id": "01HZREWARD", "title": "Song Request"},
+					"redemptions": []
+				}],
+				"message": "text",
+				"pagination": {"next_cursor": ""}
+			}`)
+		})
+
+		response, err := kickClient.GetChannelRewardRedemptions(
+			context.Background(),
+			gokick.NewChannelRewardRedemptionListFilter().AddID("01HZRED1").AddID("01HZRED2"),
+		)
+		require.NoError(t, err)
+		require.Len(t, response.Result, 1)
+		assert.Equal(t, "01HZREWARD", response.Result[0].Reward.ID)
+		assert.Nil(t, response.Result[0].Reward.CanManage)
+		assert.Nil(t, response.Result[0].Reward.Cost)
+		assert.Nil(t, response.Result[0].Reward.Description)
+		assert.Nil(t, response.Result[0].Reward.IsDeleted)
+		assert.Empty(t, response.Result[0].Redemptions)
+	})
+}
+
+func TestAcceptChannelRewardRedemptionsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.AcceptChannelRewardRedemptions(ctx, []string{"01HZRED1"})
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/channels/rewards/redemptions/accept": `+
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.FailedRedemption]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestAcceptChannelRewardRedemptionsSuccess(t *testing.T) {
+	t.Run("when all succeed", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards/redemptions/accept", r.URL.Path)
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			var body map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&body)
+			assert.NoError(t, err)
+			assert.Equal(t, []interface{}{"01HZRED1", "01HZRED2"}, body["ids"])
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"data":[], "message":"text"}`)
+		})
+
+		response, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1", "01HZRED2"})
+		require.NoError(t, err)
+		assert.Empty(t, response.Result)
+	})
+
+	t.Run("when some fail", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": [
+					{"id": "01HZRED1", "reason": "NOT_PENDING"},
+					{"id": "01HZRED2", "reason": "NOT_FOUND"}
+				],
+				"message": "text"
+			}`)
+		})
+
+		response, err := kickClient.AcceptChannelRewardRedemptions(context.Background(), []string{"01HZRED1", "01HZRED2"})
+		require.NoError(t, err)
+		require.Len(t, response.Result, 2)
+		assert.Equal(t, "01HZRED1", response.Result[0].ID)
+		assert.Equal(t, "NOT_PENDING", response.Result[0].Reason)
+		assert.Equal(t, "01HZRED2", response.Result[1].ID)
+		assert.Equal(t, "NOT_FOUND", response.Result[1].Reason)
+	})
+}
+
+func TestRejectChannelRewardRedemptionsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.RejectChannelRewardRedemptions(ctx, []string{"01HZRED1"})
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/channels/rewards/redemptions/reject": `+
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[[]github.com/scorfly/gokick.FailedRedemption]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestRejectChannelRewardRedemptionsSuccess(t *testing.T) {
+	t.Run("when all succeed", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, http.MethodPost, r.Method)
+			assert.Equal(t, "/public/v1/channels/rewards/redemptions/reject", r.URL.Path)
+			assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+			assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+			var body map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&body)
+			assert.NoError(t, err)
+			assert.Equal(t, []interface{}{"01HZRED1"}, body["ids"])
+
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"data":[], "message":"text"}`)
+		})
+
+		response, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1"})
+		require.NoError(t, err)
+		assert.Empty(t, response.Result)
+	})
+
+	t.Run("when some fail", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{
+				"data": [
+					{"id": "01HZRED1", "reason": "NOT_OWNED"},
+					{"id": "01HZRED2", "reason": "UNKNOWN"}
+				],
+				"message": "text"
+			}`)
+		})
+
+		response, err := kickClient.RejectChannelRewardRedemptions(context.Background(), []string{"01HZRED1", "01HZRED2"})
+		require.NoError(t, err)
+		require.Len(t, response.Result, 2)
+		assert.Equal(t, "01HZRED1", response.Result[0].ID)
+		assert.Equal(t, "NOT_OWNED", response.Result[0].Reason)
+		assert.Equal(t, "01HZRED2", response.Result[1].ID)
+		assert.Equal(t, "UNKNOWN", response.Result[1].Reason)
+	})
+}

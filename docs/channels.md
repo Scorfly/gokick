@@ -229,3 +229,99 @@ output
 (gokick.EmptyResponse) {
 }
 ```
+
+## Get Channel Reward Redemptions
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	filter := gokick.NewChannelRewardRedemptionListFilter().
+		SetStatus(gokick.ChannelRewardRedemptionStatusPending)
+
+	response, err := client.GetChannelRewardRedemptions(context.Background(), filter)
+	if err != nil {
+		log.Fatalf("Failed to fetch response: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.ChannelRewardRedemptionsResponseWrapper) {
+ Result: ([]gokick.RedemptionsByReward) (len=1 cap=1) {
+  (gokick.RedemptionsByReward) {
+   Redemptions: ([]gokick.ChannelRewardRedemption) (len=1 cap=1) {
+    (gokick.ChannelRewardRedemption) {
+     ID: (string) (len=26) "01JMxxxxx",
+     RedeemedAt: (string) (len=20) "2025-02-21T23:23:36Z",
+     Redeemer: (gokick.RedemptionUserInfo) {
+      UserID: (int) 117
+     },
+     Status: (string) (len=7) "pending",
+     UserInput: (string) (len=4) "test"
+    }
+   },
+   Reward: (gokick.MinimalChannelReward) {
+    CanManage: (*bool)(true),
+    Cost: (*int)(100),
+    Description: (*string)(<nil>),
+    ID: (string) (len=26) "01JMxxxxx",
+    IsDeleted: (*bool)(<nil>),
+    Title: (string) (len=10) "Test Reward"
+   }
+  }
+ },
+ Pagination: (gokick.Pagination) {
+  NextCursor: (string) ""
+ }
+}
+```
+
+## Accept Channel Reward Redemptions
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	response, err := client.AcceptChannelRewardRedemptions(context.Background(), []string{"01JMxxxxx"})
+	if err != nil {
+		log.Fatalf("Failed to accept redemptions: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.FailedChannelRewardRedemptionsResponseWrapper) {
+ Result: ([]gokick.FailedRedemption) {
+ }
+}
+```
+
+## Reject Channel Reward Redemptions
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	response, err := client.RejectChannelRewardRedemptions(context.Background(), []string{"01JMxxxxx"})
+	if err != nil {
+		log.Fatalf("Failed to reject redemptions: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.FailedChannelRewardRedemptionsResponseWrapper) {
+ Result: ([]gokick.FailedRedemption) {
+ }
+}
+```
