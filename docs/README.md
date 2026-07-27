@@ -12,12 +12,12 @@
 
 **Categories:**
 
-- [x] Get Categories
+- [x] Get Categories (`GET /public/v2/categories`)
 - [x] Get Category
 
 **Users:**
 
-- [x] Token Introspect
+- [x] Token Introspect (`POST /oauth/token/introspect`)
 - [x] Get Users
 
 **Channels:**
@@ -47,8 +47,15 @@
 
 **Livestreams:**
 
-- [x] Get Livestreams
+- [x] Get Livestreams V2 (`GET /public/v2/livestreams`) — preferred
+- [x] Get Users Livestreams (`GET /public/v1/users/livestreams`)
+- [x] Get Livestreams (`GET /public/v1/livestreams`) — **deprecated** (prefer V2 / by users)
 - [x] Get Livestreams Stats
+
+**Drops** (organization-linked OAuth apps only):
+
+- [x] Get Drops Claims
+- [x] Update Drops Claims
 
 **Public Key:**
 

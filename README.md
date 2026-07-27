@@ -124,6 +124,7 @@ See the [documentation directory](docs/README.md) for detailed examples and supp
 - [Users](docs/users.md) - User information and token introspection
 - [Categories](docs/categories.md) - Browse categories
 - [Kicks](docs/kicks.md) - Kicks leaderboard
+- [Drops](docs/drops.md) - Drops claims (organization apps)
 - [Events](docs/events.md) - Webhook event subscriptions
 - [Webhook Events](docs/webhook_events.md) - Webhook payload structures
 
@@ -137,7 +138,8 @@ GoKICK supports a comprehensive set of Kick API endpoints:
 - ✅ **Channels** - Get channels, update stream metadata, manage rewards
 - ✅ **Chat** - Send and delete messages
 - ✅ **Moderation** - Ban and unban users
-- ✅ **Livestreams** - Get livestreams and statistics
+- ✅ **Livestreams** - Get livestreams (v2 preferred; v1 deprecated) and statistics
+- ✅ **Drops** - Get and update claims (organization-linked apps)
 - ✅ **Public Key** - Get public key for webhook verification
 - ✅ **Kicks** - Get kicks leaderboard
 - ✅ **Events** - Subscribe to webhook events

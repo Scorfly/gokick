@@ -100,6 +100,7 @@ The `docs/` directory contains detailed API documentation:
 - `docs/users.md` - User information
 - `docs/categories.md` - Category browsing
 - `docs/kicks.md` - Kicks leaderboard
+- `docs/drops.md` - Drops claims (organization apps)
 - `docs/events.md` - Webhook event subscriptions
 - `docs/webhook_events.md` - Webhook payload structures
 
