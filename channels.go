@@ -10,9 +10,11 @@ import (
 )
 
 type (
-	ChannelsResponseWrapper       Response[[]ChannelResponse]
-	ChannelResponseWrapper        Response[ChannelResponse]
-	ChannelRewardsResponseWrapper Response[[]ChannelRewardResponse]
+	ChannelsResponseWrapper                       Response[[]ChannelResponse]
+	ChannelResponseWrapper                        Response[ChannelResponse]
+	ChannelRewardsResponseWrapper                 Response[[]ChannelRewardResponse]
+	ChannelRewardRedemptionsResponseWrapper       PaginatedResponse[[]RedemptionsByReward]
+	FailedChannelRewardRedemptionsResponseWrapper Response[[]FailedRedemption]
 )
 
 type StreamResponse struct {
@@ -49,6 +51,37 @@ type ChannelRewardResponse struct {
 	IsUserInputRequired               *bool   `json:"is_user_input_required,omitempty"`
 	ShouldRedemptionsSkipRequestQueue *bool   `json:"should_redemptions_skip_request_queue,omitempty"`
 	Title                             string  `json:"title"`
+}
+
+type MinimalChannelReward struct {
+	CanManage   *bool   `json:"can_manage,omitempty"`
+	Cost        *int    `json:"cost,omitempty"`
+	Description *string `json:"description,omitempty"`
+	ID          string  `json:"id"`
+	IsDeleted   *bool   `json:"is_deleted,omitempty"`
+	Title       string  `json:"title"`
+}
+
+type RedemptionUserInfo struct {
+	UserID int `json:"user_id"`
+}
+
+type ChannelRewardRedemption struct {
+	ID         string             `json:"id"`
+	RedeemedAt string             `json:"redeemed_at"`
+	Redeemer   RedemptionUserInfo `json:"redeemer"`
+	Status     string             `json:"status"`
+	UserInput  string             `json:"user_input"`
+}
+
+type RedemptionsByReward struct {
+	Redemptions []ChannelRewardRedemption `json:"redemptions"`
+	Reward      MinimalChannelReward      `json:"reward"`
+}
+
+type FailedRedemption struct {
+	ID     string `json:"id"`
+	Reason string `json:"reason"`
 }
 
 type ChannelListFilter struct {
@@ -271,4 +304,130 @@ func (c *Client) DeleteChannelReward(ctx context.Context, id string) (EmptyRespo
 	}
 
 	return EmptyResponse{}, nil
+}
+
+type ChannelRewardRedemptionListFilter struct {
+	cursor   string
+	rewardID string
+	status   *ChannelRewardRedemptionStatus
+	ids      []string
+}
+
+func NewChannelRewardRedemptionListFilter() ChannelRewardRedemptionListFilter {
+	return ChannelRewardRedemptionListFilter{}
+}
+
+// SetRewardID filters redemptions for a specific reward.
+func (f ChannelRewardRedemptionListFilter) SetRewardID(rewardID string) ChannelRewardRedemptionListFilter {
+	f.rewardID = rewardID
+	return f
+}
+
+// SetStatus filters by redemption status (defaults to pending on the API when omitted).
+func (f ChannelRewardRedemptionListFilter) SetStatus(status ChannelRewardRedemptionStatus) ChannelRewardRedemptionListFilter {
+	f.status = &status
+	return f
+}
+
+// AddID adds a redemption ID filter. When IDs are set, other filters must not be used.
+func (f ChannelRewardRedemptionListFilter) AddID(id string) ChannelRewardRedemptionListFilter {
+	f.ids = append(f.ids, id)
+	return f
+}
+
+// SetCursor sets the pagination cursor.
+func (f ChannelRewardRedemptionListFilter) SetCursor(cursor string) ChannelRewardRedemptionListFilter {
+	f.cursor = cursor
+	return f
+}
+
+func (f ChannelRewardRedemptionListFilter) ToQueryString() string {
+	v := url.Values{}
+	if f.cursor != "" {
+		v.Set("cursor", f.cursor)
+	}
+	if f.rewardID != "" {
+		v.Set("reward_id", f.rewardID)
+	}
+	if f.status != nil {
+		v.Set("status", f.status.String())
+	}
+	for _, id := range f.ids {
+		v.Add("id", id)
+	}
+	if len(v) == 0 {
+		return ""
+	}
+	return "?" + v.Encode()
+}
+
+func (c *Client) GetChannelRewardRedemptions(
+	ctx context.Context,
+	filter ChannelRewardRedemptionListFilter,
+) (ChannelRewardRedemptionsResponseWrapper, error) {
+	response, err := makePaginatedRequest[[]RedemptionsByReward](
+		ctx,
+		c,
+		http.MethodGet,
+		fmt.Sprintf("/public/v1/channels/rewards/redemptions%s", filter.ToQueryString()),
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return ChannelRewardRedemptionsResponseWrapper{}, err
+	}
+
+	return ChannelRewardRedemptionsResponseWrapper(response), nil
+}
+
+func (c *Client) AcceptChannelRewardRedemptions(
+	ctx context.Context,
+	ids []string,
+) (FailedChannelRewardRedemptionsResponseWrapper, error) {
+	body, err := json.Marshal(struct {
+		IDs []string `json:"ids"`
+	}{IDs: ids})
+	if err != nil {
+		return FailedChannelRewardRedemptionsResponseWrapper{}, fmt.Errorf("failed to marshal body: %v", err)
+	}
+
+	response, err := makeRequest[[]FailedRedemption](
+		ctx,
+		c,
+		http.MethodPost,
+		"/public/v1/channels/rewards/redemptions/accept",
+		http.StatusOK,
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return FailedChannelRewardRedemptionsResponseWrapper{}, err
+	}
+
+	return FailedChannelRewardRedemptionsResponseWrapper(response), nil
+}
+
+func (c *Client) RejectChannelRewardRedemptions(
+	ctx context.Context,
+	ids []string,
+) (FailedChannelRewardRedemptionsResponseWrapper, error) {
+	body, err := json.Marshal(struct {
+		IDs []string `json:"ids"`
+	}{IDs: ids})
+	if err != nil {
+		return FailedChannelRewardRedemptionsResponseWrapper{}, fmt.Errorf("failed to marshal body: %v", err)
+	}
+
+	response, err := makeRequest[[]FailedRedemption](
+		ctx,
+		c,
+		http.MethodPost,
+		"/public/v1/channels/rewards/redemptions/reject",
+		http.StatusOK,
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		return FailedChannelRewardRedemptionsResponseWrapper{}, err
+	}
+
+	return FailedChannelRewardRedemptionsResponseWrapper(response), nil
 }

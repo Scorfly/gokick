@@ -31,6 +31,9 @@
 - [x] Create Channel Reward
 - [x] Update Channel Reward
 - [x] Delete Channel Reward
+- [x] Get Channel Reward Redemptions
+- [x] Accept Channel Reward Redemptions
+- [x] Reject Channel Reward Redemptions
 
 **Chat:**
 
