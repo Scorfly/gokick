@@ -58,6 +58,10 @@
 - [x] Get Drops Claims
 - [x] Update Drops Claims
 
+**Ads:**
+
+- [x] Create Ad Break (`POST /public/v1/ads/ad-break`)
+
 **Public Key:**
 
 - [x] Get Public Key
