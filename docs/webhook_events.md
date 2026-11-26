@@ -13,6 +13,8 @@
 
 `ValidateEvent` (and request helpers that read webhook metadata) accept both **`Kick-Event-*`** headers and legacy **`X-Event-*`** names for compatibility.
 
+Webhook signatures are checked with the current public key from `GET /public/v1/public-key`. The key is cached and fetched again once when a signature does not match, so a rotation does not require a restart. Set `DefaultEventPublicKey` only to supply a key yourself, such as in tests.
+
 ## Validate and parse event
 
 Headers
