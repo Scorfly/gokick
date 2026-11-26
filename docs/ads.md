@@ -92,3 +92,39 @@ output
  }
 }
 ```
+
+## Enroll in Ads
+
+Enrolls the authenticated broadcaster's channel in ads. Requires the `ads:write` scope. Kick responds with `200 OK` and an empty payload.
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	response, err := client.EnrollInAds(context.Background())
+	if err != nil {
+		var kickErr gokick.Error
+		if errors.As(err, &kickErr) && kickErr.Description() != "" {
+			code, parseErr := gokick.NewAdsEnrollErrorCode(kickErr.Description())
+			if parseErr == nil {
+				log.Fatalf("ads enrollment rejected: %s (%s)", code, kickErr.Message())
+			}
+		}
+		log.Fatalf("Failed to enroll in ads: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.EmptyResponse) {
+}
+```
+
+Kick returns one of these codes in `Error.Description` when enrollment is rejected (`400` or `404`):
+
+- `CHANNEL_NOT_FOUND`
+- `CHANNEL_IS_LIVE`
+- `CHANNEL_NEVER_STREAMED`
