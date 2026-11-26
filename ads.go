@@ -91,3 +91,23 @@ func (c *Client) GetAdBreakStatus(ctx context.Context) (Response[AdBreakStatusRe
 
 	return response, nil
 }
+
+// EnrollInAds enrolls the authenticated broadcaster's channel in ads.
+// Kick responds with 200 OK and an empty payload. Requires the ads:write scope.
+// When Kick rejects enrollment, Error.Description holds the machine-readable code.
+// Parse it with NewAdsEnrollErrorCode.
+func (c *Client) EnrollInAds(ctx context.Context) (EmptyResponse, error) {
+	_, err := makeRequest[EmptyResponse](
+		ctx,
+		c,
+		http.MethodPost,
+		"/public/v1/ads/enroll",
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return EmptyResponse{}, err
+	}
+
+	return EmptyResponse{}, nil
+}

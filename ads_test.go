@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
@@ -305,4 +306,130 @@ func TestGetAdBreakStatusSuccess(t *testing.T) {
 	assert.Equal(t, 3600, response.Result.Limits.PeriodSeconds)
 	assert.True(t, response.Result.OptedIn)
 	assert.Equal(t, 2, response.Result.RemainingAdBreaks)
+}
+
+func TestEnrollInAdsError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.EnrollInAds(ctx)
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.EnrollInAds(context.Background())
+		require.EqualError(t, err, `failed to make request: Post "https://api.kick.com/public/v1/ads/enroll": context deadline exceeded `+
+			`(Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.EnrollInAds(context.Background())
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal enroll response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.EnrollInAds(context.Background())
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.EmptyResponse]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.EnrollInAds(context.Background())
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.EnrollInAds(context.Background())
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+		assert.Empty(t, kickError.Description())
+	})
+
+	errorCases := map[string]struct {
+		status int
+		code   string
+	}{
+		"channel is live": {
+			status: http.StatusBadRequest,
+			code:   "CHANNEL_IS_LIVE",
+		},
+		"channel never streamed": {
+			status: http.StatusBadRequest,
+			code:   "CHANNEL_NEVER_STREAMED",
+		},
+		"channel not found": {
+			status: http.StatusNotFound,
+			code:   "CHANNEL_NOT_FOUND",
+		},
+	}
+
+	for name, testCase := range errorCases {
+		t.Run(name, func(t *testing.T) {
+			kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(testCase.status)
+				fmt.Fprintf(w, `{"message":"Bad request","data":%q}`, testCase.code)
+			})
+
+			_, err := kickClient.EnrollInAds(context.Background())
+
+			var kickError gokick.Error
+			require.ErrorAs(t, err, &kickError)
+			assert.Equal(t, testCase.status, kickError.Code())
+			assert.Equal(t, "Bad request", kickError.Message())
+			assert.Equal(t, testCase.code, kickError.Description())
+
+			code, parseErr := gokick.NewAdsEnrollErrorCode(kickError.Description())
+			require.NoError(t, parseErr)
+			assert.Equal(t, testCase.code, code.String())
+		})
+	}
+}
+
+func TestEnrollInAdsSuccess(t *testing.T) {
+	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/public/v1/ads/enroll", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.Empty(t, body)
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"data":null,"message":"OK"}`)
+	})
+
+	response, err := kickClient.EnrollInAds(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, gokick.EmptyResponse{}, response)
 }
