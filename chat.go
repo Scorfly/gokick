@@ -7,20 +7,36 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"unicode/utf8"
+
+	"github.com/rivo/uniseg"
 )
 
-// ChatMessageContentMaxRunes is the maximum length of chat message content accepted by Kick's API.
-const ChatMessageContentMaxRunes = 500
+// ChatMessageContentMaxGraphemes is the maximum number of user-perceived characters
+// Kick accepts in a chat message. Combining marks belong to the preceding character.
+const ChatMessageContentMaxGraphemes = 500
 
-// ErrChatMessageContentTooLong is returned by SendChatMessage when content is longer than
-// ChatMessageContentMaxRunes Unicode code points.
-var ErrChatMessageContentTooLong = errors.New("gokick: chat message content exceeds 500 characters (API limit)")
+// ChatMessageContentMaxBytes is the maximum UTF-8 size Kick accepts for chat message content.
+const ChatMessageContentMaxBytes = 2048
 
-// ValidateChatMessageContent returns ErrChatMessageContentTooLong if content has more than
-// ChatMessageContentMaxRunes Unicode code points; otherwise nil.
+// ChatMessageContentMaxRunes is the grapheme-cluster limit.
+//
+// Deprecated: Kick counts user-perceived characters, not Unicode code points.
+// Use ChatMessageContentMaxGraphemes.
+const ChatMessageContentMaxRunes = ChatMessageContentMaxGraphemes
+
+// ErrChatMessageContentTooLong is returned when content exceeds ChatMessageContentMaxGraphemes
+// grapheme clusters or ChatMessageContentMaxBytes UTF-8 bytes.
+var ErrChatMessageContentTooLong = errors.New(
+	"gokick: chat message content exceeds 500 grapheme clusters or 2048 UTF-8 bytes",
+)
+
+// ValidateChatMessageContent returns ErrChatMessageContentTooLong when content exceeds
+// Kick's grapheme-cluster or UTF-8 byte limit.
 func ValidateChatMessageContent(content string) error {
-	if utf8.RuneCountInString(content) > ChatMessageContentMaxRunes {
+	if len(content) > ChatMessageContentMaxBytes {
+		return ErrChatMessageContentTooLong
+	}
+	if uniseg.GraphemeClusterCount(content) > ChatMessageContentMaxGraphemes {
 		return ErrChatMessageContentTooLong
 	}
 	return nil

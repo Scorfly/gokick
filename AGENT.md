@@ -206,6 +206,7 @@ Both workflows run on pull requests and must pass before merging.
 
 - **Go:** 1.27.0 or later
 - **Testing:** `github.com/stretchr/testify v1.11.1`
+- **Grapheme clusters:** `github.com/rivo/uniseg` (chat message length)
 - **Linting:** `golangci/golangci-lint v2.15.0`
 
 Keep dependencies minimal and up-to-date. Review `go.mod` and `go.sum` when adding dependencies.
