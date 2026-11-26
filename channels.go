@@ -29,16 +29,20 @@ type StreamResponse struct {
 	ViewerCount int      `json:"viewer_count"`
 }
 
+// ChannelResponse is one channel from GET /public/v1/channels.
+// ActiveSubscribersCount includes paid and gifted subscriptions.
+// ActiveGiftedSubscribersCount is the gifted part of that total.
 type ChannelResponse struct {
-	ActiveSubscribersCount   int              `json:"active_subscribers_count"`
-	BannerPicture            string           `json:"banner_picture"`
-	BroadcasterUserID        int              `json:"broadcaster_user_id"`
-	CanceledSubscribersCount int              `json:"canceled_subscribers_count"`
-	Category                 CategoryResponse `json:"category"`
-	ChannelDescription       string           `json:"channel_description"`
-	Slug                     string           `json:"slug"`
-	Stream                   StreamResponse   `json:"stream"`
-	StreamTitle              string           `json:"stream_title"`
+	ActiveGiftedSubscribersCount int              `json:"active_gifted_subscribers_count"`
+	ActiveSubscribersCount       int              `json:"active_subscribers_count"`
+	BannerPicture                string           `json:"banner_picture"`
+	BroadcasterUserID            int              `json:"broadcaster_user_id"`
+	CanceledSubscribersCount     int              `json:"canceled_subscribers_count"`
+	Category                     CategoryResponse `json:"category"`
+	ChannelDescription           string           `json:"channel_description"`
+	Slug                         string           `json:"slug"`
+	Stream                       StreamResponse   `json:"stream"`
+	StreamTitle                  string           `json:"stream_title"`
 }
 
 type ChannelRewardResponse struct {

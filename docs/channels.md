@@ -1,5 +1,7 @@
 ## Get Channels
 
+`active_subscribers_count` includes paid and gifted subscriptions. `active_gifted_subscribers_count` is the gifted part of that total.
+
 ```go
 	client, _ := gokick.NewClient(&gokick.ClientOptions{
 		UserAccessToken: "xxxx",
@@ -18,6 +20,7 @@ output
 (gokick.ChannelsResponseWrapper) {
  Result: ([]gokick.ChannelResponse) (len=1 cap=1) {
   (gokick.ChannelResponse) {
+   ActiveGiftedSubscribersCount: (int) 30,
    ActiveSubscribersCount: (int) 120,
    BannerPicture: (string) (len=78) "https://files.kick.com/images/channel/700014/banner_image/default-banner-2.jpg",
    BroadcasterUserID: (int) 721956,
