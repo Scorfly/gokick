@@ -9,6 +9,7 @@
 - [x] App Access Token Endpoint
 - [x] Refresh Token Endpoint
 - [x] Revoke Token Endpoint
+- [x] Ads scopes (`ads:read`, `ads:write`)
 
 **Categories:**
 

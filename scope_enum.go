@@ -16,6 +16,8 @@ const (
 	ScopeModerationBan                            // moderation:ban
 	ScopeModerationChatMessageManage              // moderation:chat_message:manage
 	ScopeKicksRead                                // kicks:read
+	ScopeAdsRead                                  // ads:read
+	ScopeAdsWrite                                 // ads:write
 )
 
 func NewScope(scope string) (Scope, error) {
@@ -42,6 +44,10 @@ func NewScope(scope string) (Scope, error) {
 		return ScopeModerationChatMessageManage, nil
 	case "kicks:read":
 		return ScopeKicksRead, nil
+	case "ads:read":
+		return ScopeAdsRead, nil
+	case "ads:write":
+		return ScopeAdsWrite, nil
 	default:
 		return 0, fmt.Errorf("unknown scope: %s", scope)
 	}
@@ -71,6 +77,10 @@ func (s Scope) String() string {
 		return "moderation:chat_message:manage"
 	case ScopeKicksRead:
 		return "kicks:read"
+	case ScopeAdsRead:
+		return "ads:read"
+	case ScopeAdsWrite:
+		return "ads:write"
 	default:
 		return "unknown"
 	}

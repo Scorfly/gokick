@@ -36,6 +36,8 @@ func TestNewScopeSuccess(t *testing.T) {
 		"moderation:ban":                 gokick.ScopeModerationBan,
 		"moderation:chat_message:manage": gokick.ScopeModerationChatMessageManage,
 		"kicks:read":                     gokick.ScopeKicksRead,
+		"ads:read":                       gokick.ScopeAdsRead,
+		"ads:write":                      gokick.ScopeAdsWrite,
 	}
 
 	for name, value := range testCases {
