@@ -20,7 +20,12 @@ func kickErrorFromResponse(statusCode int, responseBody []byte) error {
 		)
 	}
 	if apiErr.Message != "" {
-		return NewError(statusCode, apiErr.Message)
+		e := NewError(statusCode, apiErr.Message)
+		// Ads endpoints return a machine-readable code in data (for example CHANNEL_IS_NOT_LIVE).
+		if code, ok := apiErr.Data.(string); ok && code != "" {
+			e = e.WithDescription(code)
+		}
+		return e
 	}
 
 	var oauthErr authErrorResponse
