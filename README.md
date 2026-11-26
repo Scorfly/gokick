@@ -15,7 +15,7 @@ A comprehensive Go client library for the [Kick.com](https://kick.com) API. GoKI
 - 🛡️ **Moderation Tools** - Ban and unban users
 - 📊 **Livestream Data** - Get livestreams and statistics
 - 🎁 **Kicks & Rewards** - Access leaderboards and manage channel rewards
-- 📣 **Ads** - Start ad breaks on a channel
+- 📣 **Ads** - Start ad breaks and read their status
 - 🔔 **Webhook Events** - Subscribe to and handle webhook events
 - 🏷️ **Categories & Users** - Browse categories and user information
 - 🔄 **Auto Token Refresh** - Automatic user token refresh with callback support
@@ -125,7 +125,7 @@ See the [documentation directory](docs/README.md) for detailed examples and supp
 - [Users](docs/users.md) - User information and token introspection
 - [Categories](docs/categories.md) - Browse categories
 - [Kicks](docs/kicks.md) - Kicks leaderboard
-- [Ads](docs/ads.md) - Start ad breaks
+- [Ads](docs/ads.md) - Start ad breaks and read their status
 - [Drops](docs/drops.md) - Drops claims (organization apps)
 - [Events](docs/events.md) - Webhook event subscriptions
 - [Webhook Events](docs/webhook_events.md) - Webhook payload structures
@@ -144,7 +144,7 @@ GoKICK supports a comprehensive set of Kick API endpoints:
 - ✅ **Drops** - Get and update claims (organization-linked apps)
 - ✅ **Public Key** - Get public key for webhook verification
 - ✅ **Kicks** - Get kicks leaderboard
-- ✅ **Ads** - Start an ad break
+- ✅ **Ads** - Start an ad break and read its status
 - ✅ **Events** - Subscribe to webhook events
 
 See the [full feature list](docs/README.md) for complete details.

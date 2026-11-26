@@ -47,3 +47,48 @@ Kick returns one of these codes in `Error.Description` when the break is rejecte
 - `AD_BREAK_ACTIVE`
 - `MAX_AD_BREAKS_REACHED`
 - `AUTO_ADS_ACTIVE`
+
+## Get Ad Break Status
+
+Returns ad settings and recent ad breaks for the authenticated broadcaster's channel. Requires the `ads:read` or `ads:write` scope.
+
+`ad_break_id` is omitted until Kick accepts the break.
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	response, err := client.GetAdBreakStatus(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to get ad break status: %v", err)
+	}
+
+	spew.Dump("response", response)
+```
+output
+```
+(string) (len=8) "response"
+(gokick.Response[gokick.AdBreakStatusResponse]) {
+ Result: (gokick.AdBreakStatusResponse) {
+  AdBreaks: ([]gokick.AdBreakStatusItem) (len=1 cap=1) {
+   (gokick.AdBreakStatusItem) {
+    AdBreakID: (*string)((len=12) "Xq3LmP9aB2cD"),
+    BreakDurationSeconds: (int) 30,
+    CreatedAt: (string) (len=20) "2026-01-02T03:04:05Z",
+    ID: (string) (len=36) "123e4567-e89b-12d3-a456-426614174000",
+    Source: (string) (len=10) "public_api",
+    Status: (string) (len=8) "inserted"
+   }
+  },
+  AdsBlocked: (bool) false,
+  AutoAdsActive: (bool) false,
+  Limits: (gokick.AdBreakLimits) {
+   Max: (int) 3,
+   PeriodSeconds: (int) 3600
+  },
+  OptedIn: (bool) true,
+  RemainingAdBreaks: (int) 2
+ }
+}
+```

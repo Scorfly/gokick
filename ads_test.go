@@ -172,3 +172,137 @@ func TestCreateAdBreakSuccess(t *testing.T) {
 	assert.Equal(t, "123e4567-e89b-12d3-a456-426614174000", response.Result.ID)
 	assert.Equal(t, 2, response.Result.RemainingAdBreaks)
 }
+
+func TestGetAdBreakStatusError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.GetAdBreakStatus(ctx)
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.GetAdBreakStatus(context.Background())
+		require.EqualError(t, err, `failed to make request: Get "https://api.kick.com/public/v1/ads/ad-break-status": `+
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.GetAdBreakStatus(context.Background())
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal ad break status response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.GetAdBreakStatus(context.Background())
+		assert.EqualError(t, err, `failed to unmarshal response body (KICK status code 200 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.successResponse[github.com/scorfly/gokick.AdBreakStatusResponse]`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.GetAdBreakStatus(context.Background())
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.GetAdBreakStatus(context.Background())
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+		assert.Empty(t, kickError.Description())
+	})
+}
+
+func TestGetAdBreakStatusSuccess(t *testing.T) {
+	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/public/v1/ads/ad-break-status", r.URL.Path)
+		assert.Empty(t, r.URL.RawQuery)
+		assert.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{
+			"data": {
+				"ad_breaks": [
+					{
+						"ad_break_id": "Xq3LmP9aB2cD",
+						"break_duration_seconds": 30,
+						"created_at": "2026-01-02T03:04:05Z",
+						"id": "123e4567-e89b-12d3-a456-426614174000",
+						"source": "public_api",
+						"status": "inserted"
+					},
+					{
+						"break_duration_seconds": 60,
+						"created_at": "2026-01-02T03:05:05Z",
+						"id": "223e4567-e89b-12d3-a456-426614174001",
+						"source": "public_api",
+						"status": "pending"
+					}
+				],
+				"ads_blocked": false,
+				"auto_ads_active": true,
+				"limits": {
+					"max": 3,
+					"period_seconds": 3600
+				},
+				"opted_in": true,
+				"remaining_ad_breaks": 2
+			},
+			"message": "OK"
+		}`)
+	})
+
+	response, err := kickClient.GetAdBreakStatus(context.Background())
+	require.NoError(t, err)
+	require.Len(t, response.Result.AdBreaks, 2)
+
+	require.NotNil(t, response.Result.AdBreaks[0].AdBreakID)
+	assert.Equal(t, "Xq3LmP9aB2cD", *response.Result.AdBreaks[0].AdBreakID)
+	assert.Equal(t, 30, response.Result.AdBreaks[0].BreakDurationSeconds)
+	assert.Equal(t, "2026-01-02T03:04:05Z", response.Result.AdBreaks[0].CreatedAt)
+	assert.Equal(t, "123e4567-e89b-12d3-a456-426614174000", response.Result.AdBreaks[0].ID)
+	assert.Equal(t, "public_api", response.Result.AdBreaks[0].Source)
+	assert.Equal(t, "inserted", response.Result.AdBreaks[0].Status)
+
+	assert.Nil(t, response.Result.AdBreaks[1].AdBreakID)
+	assert.Equal(t, 60, response.Result.AdBreaks[1].BreakDurationSeconds)
+	assert.Equal(t, "2026-01-02T03:05:05Z", response.Result.AdBreaks[1].CreatedAt)
+	assert.Equal(t, "223e4567-e89b-12d3-a456-426614174001", response.Result.AdBreaks[1].ID)
+	assert.Equal(t, "public_api", response.Result.AdBreaks[1].Source)
+	assert.Equal(t, "pending", response.Result.AdBreaks[1].Status)
+
+	assert.False(t, response.Result.AdsBlocked)
+	assert.True(t, response.Result.AutoAdsActive)
+	assert.Equal(t, 3, response.Result.Limits.Max)
+	assert.Equal(t, 3600, response.Result.Limits.PeriodSeconds)
+	assert.True(t, response.Result.OptedIn)
+	assert.Equal(t, 2, response.Result.RemainingAdBreaks)
+}
