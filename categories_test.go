@@ -260,3 +260,98 @@ func TestGetCategorySuccess(t *testing.T) {
 	assert.Equal(t, []string{"x"}, categoryResponse.Result.Tags)
 	assert.Equal(t, "Bonisseur de La Bath", categoryResponse.Result.Thumbnail)
 }
+
+func TestGetCategoryDetailError(t *testing.T) {
+	t.Run("on new request", func(t *testing.T) {
+		kickClient, err := gokick.NewClient(&gokick.ClientOptions{UserAccessToken: "access-token"})
+		require.NoError(t, err)
+
+		var ctx context.Context
+		_, err = kickClient.GetCategoryDetail(ctx, 117)
+		require.EqualError(t, err, "failed to create request: net/http: nil Context")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		kickClient := setupTimeoutMockClient(t)
+
+		_, err := kickClient.GetCategoryDetail(context.Background(), 117)
+		wantErr := `failed to make request: Get "https://api.kick.com/public/v1/categories/117": ` +
+			`context deadline exceeded (Client.Timeout exceeded while awaiting headers)`
+		require.EqualError(t, err, wantErr)
+	})
+
+	t.Run("unmarshal error response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `117`)
+		})
+
+		_, err := kickClient.GetCategoryDetail(context.Background(), 117)
+
+		assert.EqualError(t, err, `failed to unmarshal error response (KICK status code: 500 and body "117"): json: cannot unmarshal `+
+			`number into Go value of type gokick.errorResponse`)
+	})
+
+	t.Run("unmarshal category response", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "117")
+		})
+
+		_, err := kickClient.GetCategoryDetail(context.Background(), 117)
+
+		assert.Contains(t, err.Error(), `failed to unmarshal response body (KICK status code 200 and body "117")`)
+	})
+
+	t.Run("reader failure", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Length", "10")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, "")
+		})
+
+		_, err := kickClient.GetCategoryDetail(context.Background(), 117)
+
+		assert.EqualError(t, err, `failed to read response body (KICK status code 500): unexpected EOF`)
+	})
+
+	t.Run("with internal server error", func(t *testing.T) {
+		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"message":"internal server error", "data":null}`)
+		})
+
+		_, err := kickClient.GetCategoryDetail(context.Background(), 117)
+
+		var kickError gokick.Error
+		require.ErrorAs(t, err, &kickError)
+		assert.Equal(t, http.StatusInternalServerError, kickError.Code())
+		assert.Equal(t, "internal server error", kickError.Message())
+	})
+}
+
+func TestGetCategoryDetailSuccess(t *testing.T) {
+	kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/public/v1/categories/117", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{
+			"message":"success",
+			"data":{
+				"id":117,
+				"name":"Hubert",
+				"tags":["x"],
+				"thumbnail":"Bonisseur de La Bath",
+				"viewer_count":1000
+			}
+		}`)
+	})
+
+	categoryResponse, err := kickClient.GetCategoryDetail(context.Background(), 117)
+	require.NoError(t, err)
+	assert.Equal(t, 117, categoryResponse.Result.ID)
+	assert.Equal(t, "Hubert", categoryResponse.Result.Name)
+	assert.Equal(t, []string{"x"}, categoryResponse.Result.Tags)
+	assert.Equal(t, "Bonisseur de La Bath", categoryResponse.Result.Thumbnail)
+	assert.Equal(t, 1000, categoryResponse.Result.ViewerCount)
+}

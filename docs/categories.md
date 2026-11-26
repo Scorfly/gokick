@@ -99,3 +99,34 @@ output
  }
 }
 ```
+
+## Get Category Detail (deprecated)
+
+`GetCategoryDetail` calls **`GET /public/v1/categories/{category_id}`**. Kick marks this endpoint deprecated. It is the only category call that returns `viewer_count`. `GetCategory` and `GetCategories` use v2 and do not include that field.
+
+```go
+	client, _ := gokick.NewClient(&gokick.ClientOptions{
+		UserAccessToken: "xxxx",
+	})
+
+	category, _ := client.GetCategoryDetail(context.Background(), 9569)
+
+	spew.Dump("category", category)
+```
+
+output
+
+```
+(string) (len=8) "category"
+(gokick.CategoryDetailResponseWrapper) {
+ Result: (gokick.CategoryDetailResponse) {
+  ID: (int) 9569,
+  Name: (string) (len=21) "Gaming Cafe Simulator",
+  Tags: ([]string) (len=1 cap=1) {
+   (string) (len=4) "simu"
+  },
+  Thumbnail: (string) (len=115) "https://files.kick.com/images/subcategories/9569/banner/conversion/db0164a6-05e9-42cd-8066-1c30a0d999a6-banner.webp",
+  ViewerCount: (int) 1000
+ }
+}
+```

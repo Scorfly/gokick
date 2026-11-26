@@ -10,8 +10,9 @@ import (
 )
 
 type (
-	CategoriesResponseWrapper PaginatedResponse[[]CategoryResponse]
-	CategoryResponseWrapper   Response[CategoryResponse]
+	CategoriesResponseWrapper     PaginatedResponse[[]CategoryResponse]
+	CategoryResponseWrapper       Response[CategoryResponse]
+	CategoryDetailResponseWrapper Response[CategoryDetailResponse]
 )
 
 type CategoryResponse struct {
@@ -19,6 +20,16 @@ type CategoryResponse struct {
 	Name      string   `json:"name"`
 	Tags      []string `json:"tags,omitempty"`
 	Thumbnail string   `json:"thumbnail"`
+}
+
+// CategoryDetailResponse is one category from GET /public/v1/categories/{category_id}.
+// ViewerCount is only available on this deprecated response. v2 categories omit it.
+type CategoryDetailResponse struct {
+	ID          int      `json:"id"`
+	Name        string   `json:"name"`
+	Tags        []string `json:"tags,omitempty"`
+	Thumbnail   string   `json:"thumbnail"`
+	ViewerCount int      `json:"viewer_count"`
 }
 
 type CategoryListFilter struct {
@@ -116,4 +127,24 @@ func (c *Client) GetCategory(ctx context.Context, categoryID int) (CategoryRespo
 		return CategoryResponseWrapper{}, fmt.Errorf("category id %d: empty result", categoryID)
 	}
 	return CategoryResponseWrapper{Result: list.Result[0]}, nil
+}
+
+// GetCategoryDetail returns one category, including its viewer count, from
+// GET /public/v1/categories/{category_id}.
+//
+// Deprecated: Kick marks this endpoint deprecated. GetCategory and GetCategories use v2 and omit viewer_count.
+func (c *Client) GetCategoryDetail(ctx context.Context, categoryID int) (CategoryDetailResponseWrapper, error) {
+	response, err := makeRequest[CategoryDetailResponse](
+		ctx,
+		c,
+		http.MethodGet,
+		fmt.Sprintf("/public/v1/categories/%d", categoryID),
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return CategoryDetailResponseWrapper{}, err
+	}
+
+	return CategoryDetailResponseWrapper(response), nil
 }
