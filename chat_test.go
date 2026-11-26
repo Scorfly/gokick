@@ -14,13 +14,38 @@ import (
 )
 
 func TestValidateChatMessageContent(t *testing.T) {
-	t.Run("within limit", func(t *testing.T) {
+	t.Run("within grapheme limit", func(t *testing.T) {
 		require.NoError(t, gokick.ValidateChatMessageContent(""))
-		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxRunes)))
-		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("é", gokick.ChatMessageContentMaxRunes)))
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxGraphemes)))
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat("é", gokick.ChatMessageContentMaxGraphemes)))
 	})
-	t.Run("over limit", func(t *testing.T) {
-		err := gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxRunes+1))
+
+	t.Run("combining mark counts with the base character", func(t *testing.T) {
+		cluster := "e\u0301"
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat(cluster, gokick.ChatMessageContentMaxGraphemes)))
+
+		err := gokick.ValidateChatMessageContent(strings.Repeat(cluster, gokick.ChatMessageContentMaxGraphemes+1))
+		require.ErrorIs(t, err, gokick.ErrChatMessageContentTooLong)
+	})
+
+	t.Run("over grapheme limit", func(t *testing.T) {
+		err := gokick.ValidateChatMessageContent(strings.Repeat("a", gokick.ChatMessageContentMaxGraphemes+1))
+		require.ErrorIs(t, err, gokick.ErrChatMessageContentTooLong)
+	})
+
+	t.Run("within byte limit", func(t *testing.T) {
+		flag := "\U0001F1EB\U0001F1F7"
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat(flag, gokick.ChatMessageContentMaxBytes/len(flag))))
+	})
+
+	t.Run("over byte limit", func(t *testing.T) {
+		// One family emoji is a single grapheme of several UTF-8 bytes, so the byte limit is reached first.
+		family := "\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466"
+		fit := gokick.ChatMessageContentMaxBytes / len(family)
+		require.Less(t, fit, gokick.ChatMessageContentMaxGraphemes)
+
+		require.NoError(t, gokick.ValidateChatMessageContent(strings.Repeat(family, fit)))
+		err := gokick.ValidateChatMessageContent(strings.Repeat(family, fit+1))
 		require.ErrorIs(t, err, gokick.ErrChatMessageContentTooLong)
 	})
 }
@@ -43,7 +68,7 @@ func TestSendChatMessageError(t *testing.T) {
 		_, err = client.SendChatMessage(
 			context.Background(),
 			nil,
-			strings.Repeat("x", gokick.ChatMessageContentMaxRunes+1),
+			strings.Repeat("x", gokick.ChatMessageContentMaxGraphemes+1),
 			nil,
 			gokick.MessageTypeBot,
 		)
@@ -170,7 +195,7 @@ func TestSendChatMessageSuccess(t *testing.T) {
 			}`)
 		})
 
-		msg := strings.Repeat("x", gokick.ChatMessageContentMaxRunes)
+		msg := strings.Repeat("x", gokick.ChatMessageContentMaxGraphemes)
 		response, err := kickClient.SendChatMessage(
 			context.Background(),
 			nil,
