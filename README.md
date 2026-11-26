@@ -135,7 +135,7 @@ See the [documentation directory](docs/README.md) for detailed examples and supp
 GoKICK supports a comprehensive set of Kick API endpoints:
 
 - ✅ **Authentication** - Authorization, token exchange, refresh, revoke, app tokens
-- ✅ **Categories** - List and get category details
+- ✅ **Categories** - List categories and get one category, including viewer count from the deprecated v1 endpoint
 - ✅ **Users** - Get users, token introspection
 - ✅ **Channels** - Get channels, update stream metadata, manage rewards
 - ✅ **Chat** - Send and delete messages

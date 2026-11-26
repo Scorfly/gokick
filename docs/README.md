@@ -14,7 +14,8 @@
 **Categories:**
 
 - [x] Get Categories (`GET /public/v2/categories`)
-- [x] Get Category
+- [x] Get Category (`GET /public/v2/categories` by id)
+- [x] Get Category Detail (`GET /public/v1/categories/{category_id}`) — **deprecated** (includes `viewer_count`)
 
 **Users:**
 
