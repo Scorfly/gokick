@@ -46,3 +46,48 @@ func (c *Client) CreateAdBreak(ctx context.Context, req CreateAdBreakRequest) (R
 
 	return response, nil
 }
+
+// AdBreakLimits is how many ad breaks a channel may run in a period.
+type AdBreakLimits struct {
+	Max           int `json:"max"`
+	PeriodSeconds int `json:"period_seconds"`
+}
+
+// AdBreakStatusItem is one ad break returned by GetAdBreakStatus.
+// AdBreakID is nil until Kick accepts the break.
+type AdBreakStatusItem struct {
+	AdBreakID            *string `json:"ad_break_id,omitempty"`
+	BreakDurationSeconds int     `json:"break_duration_seconds"`
+	CreatedAt            string  `json:"created_at"`
+	ID                   string  `json:"id"`
+	Source               string  `json:"source"`
+	Status               string  `json:"status"`
+}
+
+// AdBreakStatusResponse is the payload of GET /public/v1/ads/ad-break-status.
+type AdBreakStatusResponse struct {
+	AdBreaks          []AdBreakStatusItem `json:"ad_breaks"`
+	AdsBlocked        bool                `json:"ads_blocked"`
+	AutoAdsActive     bool                `json:"auto_ads_active"`
+	Limits            AdBreakLimits       `json:"limits"`
+	OptedIn           bool                `json:"opted_in"`
+	RemainingAdBreaks int                 `json:"remaining_ad_breaks"`
+}
+
+// GetAdBreakStatus returns ad break status for the authenticated broadcaster's channel.
+// Requires the ads:read or ads:write scope.
+func (c *Client) GetAdBreakStatus(ctx context.Context) (Response[AdBreakStatusResponse], error) {
+	response, err := makeRequest[AdBreakStatusResponse](
+		ctx,
+		c,
+		http.MethodGet,
+		"/public/v1/ads/ad-break-status",
+		http.StatusOK,
+		http.NoBody,
+	)
+	if err != nil {
+		return Response[AdBreakStatusResponse]{}, err
+	}
+
+	return response, nil
+}

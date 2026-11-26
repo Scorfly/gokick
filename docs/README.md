@@ -61,6 +61,7 @@
 **Ads:**
 
 - [x] Create Ad Break (`POST /public/v1/ads/ad-break`)
+- [x] Get Ad Break Status (`GET /public/v1/ads/ad-break-status`)
 
 **Public Key:**
 
