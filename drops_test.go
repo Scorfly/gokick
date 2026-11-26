@@ -306,6 +306,8 @@ func TestGetDropsClaimFromRequestError(t *testing.T) {
 	})
 
 	t.Run("invalid signature", func(t *testing.T) {
+		useTestEventPublicKey(t)
+
 		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(`{}`))
 		require.NoError(t, err)
 		req.Header.Set("Kick-Event-Message-ID", "01JAXK8N4QWRTY5PM7ZEBVGH2S")

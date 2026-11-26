@@ -3,7 +3,9 @@ package gokick_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -90,6 +92,8 @@ func TestGetEventFromRequestError(t *testing.T) {
 	})
 
 	t.Run("cannot parse event (legacy X-Event headers)", func(t *testing.T) {
+		useTestEventPublicKey(t)
+
 		req, err := http.NewRequest("GET", "https://domain.tld", strings.NewReader(""))
 		require.NoError(t, err)
 		req.Header.Set("X-Event-Subscription", "chat.message.sent")
@@ -99,6 +103,8 @@ func TestGetEventFromRequestError(t *testing.T) {
 	})
 
 	t.Run("cannot parse event (Kick-Event headers)", func(t *testing.T) {
+		useTestEventPublicKey(t)
+
 		req, err := http.NewRequest("POST", "https://domain.tld/webhook", strings.NewReader(""))
 		require.NoError(t, err)
 		req.Header.Set("Kick-Event-Type", "chat.message.sent")
@@ -264,6 +270,8 @@ v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
 	})
 
 	t.Run("failed to ensure validy of signature", func(t *testing.T) {
+		useTestEventPublicKey(t)
+
 		_, err := gokick.ValidateAndParseEvent(
 			gokick.SubscriptionNameChatMessage,
 			"1",
@@ -276,6 +284,8 @@ v/Ow5T0q5gIJAiEAyS4RaI9YG8EWx/2w0T67ZUVAw8eOMB6BIUg0Xcu+3okCIBOs
 	})
 
 	t.Run("failed to ensure verify PKCS1v15", func(t *testing.T) {
+		useTestEventPublicKey(t)
+
 		_, err := gokick.ValidateAndParseEvent(
 			gokick.SubscriptionNameChatMessage,
 			"1",
@@ -518,4 +528,121 @@ func skipSignatureValidation(t *testing.T) {
 	previousKey := gokick.SkipSignatureValidation
 	t.Cleanup(func() { gokick.SkipSignatureValidation = previousKey })
 	gokick.SkipSignatureValidation = true
+}
+
+func useTestEventPublicKey(t *testing.T) {
+	t.Helper()
+
+	publicKey, _ := signDropsClaim(t, "message-id", "2026-01-01T00:00:00Z", "body")
+	previous := gokick.DefaultEventPublicKey
+	t.Cleanup(func() { gokick.DefaultEventPublicKey = previous })
+	gokick.DefaultEventPublicKey = publicKey
+}
+
+func TestEventSignatureUsesFetchedPublicKey(t *testing.T) {
+	body := `{"message_id":"m"}`
+	messageID := "01JMND5PSxxxxxx"
+	timestamp := "2026-01-01T00:00:00Z"
+	publicKey, signature := signDropsClaim(t, messageID, timestamp, body)
+
+	var calls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/public/v1/public-key", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"message":"OK","data":{"public_key":%q}}`, publicKey)
+	}))
+	t.Cleanup(server.Close)
+
+	restoreEventPublicKeyTestHooks(t)
+	gokick.EventPublicKeyBaseURL = server.URL
+	gokick.DefaultEventPublicKey = ""
+	gokick.ClearFetchedEventPublicKey()
+
+	for range 2 {
+		event, err := gokick.ValidateAndParseEvent(
+			gokick.SubscriptionNameChatMessage,
+			"1",
+			signature,
+			messageID,
+			timestamp,
+			body,
+		)
+		require.NoError(t, err)
+		assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+	}
+	assert.Equal(t, 1, calls)
+}
+
+func TestEventSignatureRefreshesPublicKeyAfterRotation(t *testing.T) {
+	body := `{"message_id":"m"}`
+	messageID := "01JMND5PSxxxxxx"
+	timestamp := "2026-01-01T00:00:00Z"
+	staleKey, _ := signDropsClaim(t, messageID, timestamp, "other")
+	publicKey, signature := signDropsClaim(t, messageID, timestamp, body)
+
+	var calls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		key := staleKey
+		if calls > 1 {
+			key = publicKey
+		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"message":"OK","data":{"public_key":%q}}`, key)
+	}))
+	t.Cleanup(server.Close)
+
+	restoreEventPublicKeyTestHooks(t)
+	gokick.EventPublicKeyBaseURL = server.URL
+	gokick.DefaultEventPublicKey = ""
+	gokick.ClearFetchedEventPublicKey()
+
+	event, err := gokick.ValidateAndParseEvent(
+		gokick.SubscriptionNameChatMessage,
+		"1",
+		signature,
+		messageID,
+		timestamp,
+		body,
+	)
+	require.NoError(t, err)
+	assert.IsType(t, &gokick.ChatMessageEvent{}, event)
+	assert.Equal(t, 2, calls)
+}
+
+func TestEventSignatureFetchPublicKeyError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"message":"unavailable","data":null}`)
+	}))
+	t.Cleanup(server.Close)
+
+	restoreEventPublicKeyTestHooks(t)
+	gokick.EventPublicKeyBaseURL = server.URL
+	gokick.DefaultEventPublicKey = ""
+	gokick.ClearFetchedEventPublicKey()
+
+	_, err := gokick.ValidateAndParseEvent(
+		gokick.SubscriptionNameChatMessage,
+		"1",
+		"b3NzMTE3",
+		"message ID",
+		"timestamp",
+		"body",
+	)
+	require.ErrorContains(t, err, "failed to fetch public key:")
+}
+
+func restoreEventPublicKeyTestHooks(t *testing.T) {
+	t.Helper()
+
+	previousURL := gokick.EventPublicKeyBaseURL
+	previousKey := gokick.DefaultEventPublicKey
+	t.Cleanup(func() {
+		gokick.EventPublicKeyBaseURL = previousURL
+		gokick.DefaultEventPublicKey = previousKey
+		gokick.ClearFetchedEventPublicKey()
+	})
 }

@@ -1,5 +1,7 @@
 ## Get Public Key
 
+Webhook verification calls this endpoint itself. `GetPublicKey` is the same call when you want the PEM directly.
+
 ```go
 	client, _ := gokick.NewClient(&gokick.ClientOptions{
 		UserAccessToken: "xxxx",

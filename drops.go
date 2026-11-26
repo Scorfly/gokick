@@ -153,6 +153,7 @@ func dropsClaimRequestMeta(h http.Header) (signature, messageID, timestamp strin
 
 // GetDropsClaimFromRequest verifies a Drops claim webhook and parses its body.
 // The signature is message ID, timestamp, and the raw body, joined by dots, same as other Kick webhooks.
+// The public key is fetched from GET /public/v1/public-key unless DefaultEventPublicKey is set.
 // There is no Kick-Event-Type header on this webhook.
 func GetDropsClaimFromRequest(request *http.Request) (DropsClaimEvent, error) {
 	if request == nil {
@@ -168,15 +169,9 @@ func GetDropsClaimFromRequest(request *http.Request) (DropsClaimEvent, error) {
 
 	if !SkipSignatureValidation {
 		signed := []byte(fmt.Sprintf("%s.%s.%s", messageID, timestamp, body))
-
-		publicKey, keyErr := parsePublicKey([]byte(DefaultEventPublicKey))
-		if keyErr != nil {
-			return DropsClaimEvent{}, fmt.Errorf("failed to parse public key: %v", keyErr)
-		}
-
-		verifyErr := verifyEventValidity(&publicKey, signed, []byte(signature))
-		if verifyErr != nil {
-			return DropsClaimEvent{}, fmt.Errorf("failed to verify drops claim: %v", verifyErr)
+		err = checkEventSignature(request.Context(), signed, []byte(signature))
+		if err != nil {
+			return DropsClaimEvent{}, wrapEventSignatureError(err, "failed to verify drops claim")
 		}
 	}
 

@@ -86,7 +86,7 @@ Headers:
 - `Kick-Event-Message-ID`
 - `Kick-Event-Timestamp`
 
-The signature covers `messageID.timestamp.rawBody`, verified with the public key from `GetPublicKey`.
+The signature covers `messageID.timestamp.rawBody`. Verification loads the current public key from `GET /public/v1/public-key` and refreshes it once if the signature does not match.
 
 ```go
 	claim, err := gokick.GetDropsClaimFromRequest(req)

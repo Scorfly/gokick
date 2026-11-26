@@ -1,7 +1,7 @@
 package gokick
 
 import (
-	"bytes"
+	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 )
 
 type Badge struct {
@@ -149,17 +150,28 @@ type ChannelRewardRedemptionUpdatedEvent struct {
 	Broadcaster UserEvent `json:"broadcaster"`
 }
 
-// I set it as public to be able to change it in tests.
-// It's not a good practice to do so, but it's the only way to do it for now.
-var DefaultEventPublicKey = `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq/+l1WnlRrGSolDMA+A8
-6rAhMbQGmQ2SapVcGM3zq8ANXjnhDWocMqfWcTd95btDydITa10kDvHzw9WQOqp2
-MZI7ZyrfzJuz5nhTPCiJwTwnEtWft7nV14BYRDHvlfqPUaZ+1KR4OCaO/wWIk/rQ
-L/TjY0M70gse8rlBkbo2a8rKhu69RQTRsoaf4DVhDPEeSeI5jVrRDGAMGL3cGuyY
-6CLKGdjVEM78g3JfYOvDU/RvfqD7L89TZ3iN94jrmWdGz34JNlEI5hqK8dd7C5EF
-BEbZ5jgB8s8ReQV8H+MkuffjdAj3ajDDX3DOJMIut1lBrUVD1AaSrGCKHooWoL2e
-twIDAQAB
------END PUBLIC KEY-----`
+// DefaultEventPublicKey overrides the webhook public key when it is not empty.
+// Leave it empty so verification loads the current key from GET /public/v1/public-key.
+// Kick can rotate that key; a hardcoded copy fails after a rotation.
+// Tests set this to avoid calling the API.
+var DefaultEventPublicKey string
+
+// EventPublicKeyBaseURL overrides the API origin used to fetch the webhook public key.
+// Empty uses https://api.kick.com.
+var EventPublicKeyBaseURL string
+
+var (
+	fetchedEventPublicKey   string
+	fetchedEventPublicKeyMu sync.Mutex
+)
+
+// ClearFetchedEventPublicKey drops the cached webhook public key.
+// The next verification loads a new key from GET /public/v1/public-key.
+func ClearFetchedEventPublicKey() {
+	fetchedEventPublicKeyMu.Lock()
+	fetchedEventPublicKey = ""
+	fetchedEventPublicKeyMu.Unlock()
+}
 
 // I set it to be able to tests without having to sign the events.
 // It's not a good practice to do so, but it's the only way to do it for now.
@@ -209,7 +221,8 @@ func GetEventFromRequest(request *http.Request) (interface{}, error) {
 		return nil, fmt.Errorf("failed to read body: %v", err)
 	}
 
-	return ValidateAndParseEvent(
+	return validateAndParseEventWithContext(
+		request.Context(),
 		subscriptionName,
 		version,
 		eventSignature,
@@ -225,25 +238,8 @@ func ValidateEvent(
 ) bool {
 	if !SkipSignatureValidation {
 		_, _, sig, msgID, ts := webhookRequestMeta(header)
-		payload := struct {
-			signature string
-			messageID string
-			timestamp string
-		}{
-			signature: sig,
-			messageID: msgID,
-			timestamp: ts,
-		}
-
-		signature := bytes.Join([][]byte{
-			[]byte(payload.messageID),
-			[]byte(payload.timestamp),
-			body,
-		}, []byte("."))
-
-		publicKey, _ := parsePublicKey([]byte(DefaultEventPublicKey))
-
-		err := verifyEventValidity(&publicKey, signature, []byte(payload.signature))
+		signed := []byte(fmt.Sprintf("%s.%s.%s", msgID, ts, body))
+		err := checkEventSignature(context.Background(), signed, []byte(sig))
 		if err != nil {
 			return false
 		}
@@ -260,17 +256,31 @@ func ValidateAndParseEvent(
 	timestamp string,
 	body string,
 ) (interface{}, error) {
+	return validateAndParseEventWithContext(
+		context.Background(),
+		subscriptionName,
+		version,
+		eventSignature,
+		messageID,
+		timestamp,
+		body,
+	)
+}
+
+func validateAndParseEventWithContext(
+	ctx context.Context,
+	subscriptionName SubscriptionName,
+	version string,
+	eventSignature string,
+	messageID string,
+	timestamp string,
+	body string,
+) (interface{}, error) {
 	if !SkipSignatureValidation {
-		signature := []byte(fmt.Sprintf("%s.%s.%s", messageID, timestamp, body))
-
-		publicKey, err := parsePublicKey([]byte(DefaultEventPublicKey))
+		signed := []byte(fmt.Sprintf("%s.%s.%s", messageID, timestamp, body))
+		err := checkEventSignature(ctx, signed, []byte(eventSignature))
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse public key: %v", err)
-		}
-
-		err = verifyEventValidity(&publicKey, signature, []byte(eventSignature))
-		if err != nil {
-			return nil, fmt.Errorf("failed to verify event validity: %v", err)
+			return nil, wrapEventSignatureError(err, "failed to verify event validity")
 		}
 	}
 
@@ -325,10 +335,121 @@ func verifyEventValidity(publicKey *rsa.PublicKey, body []byte, signature []byte
 
 	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, hashed[:], signature)
 	if err != nil {
-		return fmt.Errorf("failed to verify signature: %v", err)
+		return signatureMismatchError{err: err}
 	}
 
 	return nil
+}
+
+type signatureMismatchError struct {
+	err error
+}
+
+func (e signatureMismatchError) Error() string {
+	return fmt.Sprintf("failed to verify signature: %v", e.err)
+}
+
+func (e signatureMismatchError) Unwrap() error {
+	return e.err
+}
+
+type eventKeyError struct {
+	op  string
+	err error
+}
+
+func (e *eventKeyError) Error() string {
+	return e.err.Error()
+}
+
+func (e *eventKeyError) Unwrap() error {
+	return e.err
+}
+
+func checkEventSignature(ctx context.Context, signed, signature []byte) error {
+	pemKey, err := eventPublicKeyPEM(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	verifyErr := verifyPEM(pemKey, signed, signature)
+	if verifyErr == nil || DefaultEventPublicKey != "" || !isSignatureMismatch(verifyErr) {
+		return verifyErr
+	}
+
+	refreshed, refreshErr := eventPublicKeyPEM(ctx, true)
+	if refreshErr != nil || refreshed == pemKey {
+		return verifyErr
+	}
+
+	return verifyPEM(refreshed, signed, signature)
+}
+
+func isSignatureMismatch(err error) bool {
+	var mismatch signatureMismatchError
+	return errors.As(err, &mismatch)
+}
+
+func verifyPEM(pemKey string, signed, signature []byte) error {
+	publicKey, err := parsePublicKey([]byte(pemKey))
+	if err != nil {
+		return &eventKeyError{op: "parse", err: err}
+	}
+
+	return verifyEventValidity(&publicKey, signed, signature)
+}
+
+func eventPublicKeyPEM(ctx context.Context, refresh bool) (string, error) {
+	if DefaultEventPublicKey != "" {
+		return DefaultEventPublicKey, nil
+	}
+
+	fetchedEventPublicKeyMu.Lock()
+	defer fetchedEventPublicKeyMu.Unlock()
+
+	if !refresh && fetchedEventPublicKey != "" {
+		return fetchedEventPublicKey, nil
+	}
+
+	pemKey, err := fetchEventPublicKey(ctx)
+	if err != nil {
+		return "", &eventKeyError{op: "fetch", err: err}
+	}
+
+	fetchedEventPublicKey = pemKey
+	return pemKey, nil
+}
+
+func fetchEventPublicKey(ctx context.Context) (string, error) {
+	client, err := NewClient(&ClientOptions{APIBaseURL: EventPublicKeyBaseURL})
+	if err != nil {
+		return "", err
+	}
+
+	response, err := client.GetPublicKey(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if response.Result.PublicKey == "" {
+		return "", errors.New("public key is empty")
+	}
+
+	return response.Result.PublicKey, nil
+}
+
+func wrapEventSignatureError(err error, verifyPrefix string) error {
+	var keyErr *eventKeyError
+	if errors.As(err, &keyErr) {
+		switch keyErr.op {
+		case "parse":
+			return fmt.Errorf("failed to parse public key: %v", keyErr.err)
+		case "fetch":
+			return fmt.Errorf("failed to fetch public key: %v", keyErr.err)
+		}
+	}
+
+	return fmt.Errorf("%s: %v", verifyPrefix, err)
 }
 
 type eventConstructor func() interface{}
