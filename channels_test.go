@@ -123,6 +123,7 @@ func TestGetChannelsSuccess(t *testing.T) {
 		kickClient := setupMockClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, `{"message":"success", "data":[{
+				"active_gifted_subscribers_count": 12,
 				"active_subscribers_count": 42,
 				"banner_picture": "banner picture",
 				"broadcaster_user_id": 117,
@@ -146,6 +147,7 @@ func TestGetChannelsSuccess(t *testing.T) {
 		channelsResponse, err := kickClient.GetChannels(context.Background(), gokick.NewChannelListFilter())
 		require.NoError(t, err)
 		require.Len(t, channelsResponse.Result, 1)
+		assert.Equal(t, 12, channelsResponse.Result[0].ActiveGiftedSubscribersCount)
 		assert.Equal(t, 42, channelsResponse.Result[0].ActiveSubscribersCount)
 		assert.Equal(t, "banner picture", channelsResponse.Result[0].BannerPicture)
 		assert.Equal(t, 117, channelsResponse.Result[0].BroadcasterUserID)
