@@ -75,3 +75,37 @@ output
 (gokick.EmptyResponse) {
 }
 ```
+
+## Drops Claim Webhook
+
+Kick POSTs this body to the organization's webhook URL when a viewer claims a reward. It is not an event-subscription webhook: there is no `Kick-Event-Type` header.
+
+Headers:
+
+- `Kick-Event-Signature`
+- `Kick-Event-Message-ID`
+- `Kick-Event-Timestamp`
+
+The signature covers `messageID.timestamp.rawBody`, verified with the public key from `GetPublicKey`.
+
+```go
+	claim, err := gokick.GetDropsClaimFromRequest(req)
+	if err != nil {
+		log.Fatalf("Failed to verify drops claim: %v", err)
+	}
+
+	spew.Dump("claim", claim)
+```
+output
+```
+(string) (len=5) "claim"
+(gokick.DropsClaimEvent) {
+ ClaimID: (string) (len=26) "01JAXK8N4QWRTY5PM7ZEBVGH2S",
+ UserID: (int) 1234,
+ CampaignID: (string) (len=26) "01JAXK8N4QWRTY5PM7ZEBVJDS8S",
+ RewardID: (string) (len=26) "01JAXK8N4QWRTY5PM7ZEBVJDS9T",
+ ExternalID: (string) (len=7) "ext-123"
+}
+```
+
+`external_id` is empty when the reward has no external reference. Respond with `200 OK`. The webhook is idempotent on `claim_id`.

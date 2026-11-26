@@ -57,6 +57,7 @@
 
 - [x] Get Drops Claims
 - [x] Update Drops Claims
+- [x] Drops Claim webhook
 
 **Ads:**
 
@@ -92,3 +93,4 @@
 - [x] Moderation Banned
 - [x] Kicks Gifted
 - [x] Channel Reward Redemption Updated
+- [x] Drops Claim (organization webhook, separate headers)

@@ -141,7 +141,7 @@ GoKICK supports a comprehensive set of Kick API endpoints:
 - ✅ **Chat** - Send and delete messages
 - ✅ **Moderation** - Ban and unban users
 - ✅ **Livestreams** - Get livestreams (v2 preferred; v1 deprecated) and statistics
-- ✅ **Drops** - Get and update claims (organization-linked apps)
+- ✅ **Drops** - Get and update claims, and verify claim webhooks
 - ✅ **Public Key** - Get public key for webhook verification
 - ✅ **Kicks** - Get kicks leaderboard
 - ✅ **Ads** - Enroll a channel, start an ad break, and read its status

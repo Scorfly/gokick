@@ -2,9 +2,17 @@ package gokick_test
 
 import (
 	"context"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/scorfly/gokick"
@@ -281,4 +289,136 @@ func TestUpdateDropsClaimsSuccess(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, gokick.EmptyResponse{}, response)
+}
+
+func TestGetDropsClaimFromRequestError(t *testing.T) {
+	t.Run("request not set", func(t *testing.T) {
+		_, err := gokick.GetDropsClaimFromRequest(nil)
+		require.EqualError(t, err, "request cannot be nil")
+	})
+
+	t.Run("invalid body", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", faultyReader{})
+		require.NoError(t, err)
+
+		_, err = gokick.GetDropsClaimFromRequest(req)
+		require.EqualError(t, err, "failed to read body: read error")
+	})
+
+	t.Run("invalid signature", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(`{}`))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Message-ID", "01JAXK8N4QWRTY5PM7ZEBVGH2S")
+		req.Header.Set("Kick-Event-Timestamp", "2026-01-15T12:00:00Z")
+		req.Header.Set("Kick-Event-Signature", "not-a-signature")
+
+		_, err = gokick.GetDropsClaimFromRequest(req)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to verify drops claim:")
+	})
+
+	t.Run("event timestamp header is not the drops timestamp", func(t *testing.T) {
+		body := `{"claim_id":"01JAXK8N4QWRTY5PM7ZEBVGH2S","user_id":1234,` +
+			`"campaign_id":"01JAXK8N4QWRTY5PM7ZEBVJDS8S","reward_id":"01JAXK8N4QWRTY5PM7ZEBVJDS9T","external_id":"ext-123"}`
+		messageID := "01K0TDDR08Q5ZNWXK92VRXD7GW"
+		timestamp := "2026-01-15T12:00:00Z"
+		publicKey, signature := signDropsClaim(t, messageID, timestamp, body)
+
+		previousKey := gokick.DefaultEventPublicKey
+		t.Cleanup(func() { gokick.DefaultEventPublicKey = previousKey })
+		gokick.DefaultEventPublicKey = publicKey
+
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Message-ID", messageID)
+		req.Header.Set("Kick-Event-Message-Timestamp", timestamp)
+		req.Header.Set("Kick-Event-Signature", signature)
+
+		_, err = gokick.GetDropsClaimFromRequest(req)
+		require.EqualError(t, err, "failed to verify drops claim: failed to verify signature: crypto/rsa: verification error")
+	})
+
+	t.Run("invalid public key", func(t *testing.T) {
+		previousKey := gokick.DefaultEventPublicKey
+		t.Cleanup(func() { gokick.DefaultEventPublicKey = previousKey })
+		gokick.DefaultEventPublicKey = "invalid key"
+
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(`{}`))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Signature", "signature")
+
+		_, err = gokick.GetDropsClaimFromRequest(req)
+		require.EqualError(t, err, "failed to parse public key: failed to decode public key")
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		skipSignatureValidation(t)
+
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(`117`))
+		require.NoError(t, err)
+
+		_, err = gokick.GetDropsClaimFromRequest(req)
+		require.EqualError(t, err, "failed to unmarshal drops claim: json: cannot unmarshal number into Go value of type gokick.DropsClaimEvent")
+	})
+}
+
+func TestGetDropsClaimFromRequestSuccess(t *testing.T) {
+	body := `{"claim_id":"01JAXK8N4QWRTY5PM7ZEBVGH2S","user_id":1234,` +
+		`"campaign_id":"01JAXK8N4QWRTY5PM7ZEBVJDS8S","reward_id":"01JAXK8N4QWRTY5PM7ZEBVJDS9T","external_id":"ext-123"}`
+	messageID := "01K0TDDR08Q5ZNWXK92VRXD7GW"
+	timestamp := "2026-01-15T12:00:00Z"
+
+	t.Run("verified signature", func(t *testing.T) {
+		publicKey, signature := signDropsClaim(t, messageID, timestamp, body)
+
+		previousKey := gokick.DefaultEventPublicKey
+		t.Cleanup(func() { gokick.DefaultEventPublicKey = previousKey })
+		gokick.DefaultEventPublicKey = publicKey
+
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(body))
+		require.NoError(t, err)
+		req.Header.Set("Kick-Event-Message-ID", messageID)
+		req.Header.Set("Kick-Event-Timestamp", timestamp)
+		req.Header.Set("Kick-Event-Signature", signature)
+
+		claim, err := gokick.GetDropsClaimFromRequest(req)
+		require.NoError(t, err)
+		assert.Equal(t, "01JAXK8N4QWRTY5PM7ZEBVGH2S", claim.ClaimID)
+		assert.Equal(t, 1234, claim.UserID)
+		assert.Equal(t, "01JAXK8N4QWRTY5PM7ZEBVJDS8S", claim.CampaignID)
+		assert.Equal(t, "01JAXK8N4QWRTY5PM7ZEBVJDS9T", claim.RewardID)
+		assert.Equal(t, "ext-123", claim.ExternalID)
+	})
+
+	t.Run("without external id", func(t *testing.T) {
+		skipSignatureValidation(t)
+
+		raw := `{"claim_id":"01JAXK8N4QWRTY5PM7ZEBVGH2S","user_id":1234,` +
+			`"campaign_id":"01JAXK8N4QWRTY5PM7ZEBVJDS8S","reward_id":"01JAXK8N4QWRTY5PM7ZEBVJDS9T"}`
+		req, err := http.NewRequest(http.MethodPost, "https://domain.tld/drops", strings.NewReader(raw))
+		require.NoError(t, err)
+
+		claim, err := gokick.GetDropsClaimFromRequest(req)
+		require.NoError(t, err)
+		assert.Equal(t, "01JAXK8N4QWRTY5PM7ZEBVGH2S", claim.ClaimID)
+		assert.Empty(t, claim.ExternalID)
+	})
+}
+
+func signDropsClaim(t *testing.T, messageID, timestamp, body string) (string, string) {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	require.NoError(t, err)
+
+	publicKey := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicKeyBytes}))
+
+	hashed := sha256.Sum256([]byte(messageID + "." + timestamp + "." + body))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hashed[:])
+	require.NoError(t, err)
+
+	return publicKey, base64.StdEncoding.EncodeToString(signature)
 }
