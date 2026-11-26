@@ -9,7 +9,7 @@ GoKICK is a comprehensive Go client library for the [Kick.com](https://kick.com)
 **Key Characteristics:**
 - Go 1.27.0+ required
 - Comprehensive test coverage (target: 96%+)
-- Strict linting with golangci-lint v2.13.1
+- Strict linting with golangci-lint v2.15.0
 - Well-documented with examples in `docs/` directory
 - Follows Go best practices and idioms
 
@@ -54,7 +54,7 @@ golangci-lint run --timeout 5m --config .golangci.yml
 - Linting is enforced via `.golangci.yml` configuration
 - Zero tolerance for linting errors
 - Fix all linting issues before committing
-- The project uses golangci-lint v2.13.1
+- The project uses golangci-lint v2.15.0
 - CI/CD will fail on linting errors
 
 **Common Linters Enabled:**
@@ -205,7 +205,7 @@ Both workflows run on pull requests and must pass before merging.
 
 - **Go:** 1.27.0 or later
 - **Testing:** `github.com/stretchr/testify v1.11.1`
-- **Linting:** `golangci/golangci-lint v2.13.1`
+- **Linting:** `golangci/golangci-lint v2.15.0`
 
 Keep dependencies minimal and up-to-date. Review `go.mod` and `go.sum` when adding dependencies.
 
