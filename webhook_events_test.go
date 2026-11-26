@@ -114,6 +114,30 @@ func TestGetEventFromRequestError(t *testing.T) {
 	})
 }
 
+func TestEventSubscriptionID(t *testing.T) {
+	t.Run("nil header", func(t *testing.T) {
+		assert.Empty(t, gokick.EventSubscriptionID(nil))
+	})
+
+	t.Run("missing header", func(t *testing.T) {
+		assert.Empty(t, gokick.EventSubscriptionID(http.Header{}))
+	})
+
+	t.Run("Kick-Event-Subscription-Id", func(t *testing.T) {
+		header := http.Header{}
+		header.Set("Kick-Event-Subscription-Id", "01JMN13xxxxxx")
+
+		assert.Equal(t, "01JMN13xxxxxx", gokick.EventSubscriptionID(header))
+	})
+
+	t.Run("canonical Kick-Event-Subscription-ID", func(t *testing.T) {
+		header := http.Header{}
+		header.Set("Kick-Event-Subscription-ID", "01JMN13xxxxxx")
+
+		assert.Equal(t, "01JMN13xxxxxx", gokick.EventSubscriptionID(header))
+	})
+}
+
 func TestGetEventFromRequestSuccess(t *testing.T) {
 	skipSignatureValidation(t)
 

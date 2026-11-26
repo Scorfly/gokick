@@ -204,6 +204,18 @@ func webhookRequestMeta(h http.Header) (eventName, version, signature, messageID
 	return eventName, version, signature, messageID, timestamp
 }
 
+// EventSubscriptionID returns the Kick-Event-Subscription-Id header.
+// The value is the subscription ULID that produced the webhook. It is empty when the header is absent.
+func EventSubscriptionID(header http.Header) string {
+	if header == nil {
+		return ""
+	}
+
+	return header.Get("Kick-Event-Subscription-Id")
+}
+
+// GetEventFromRequest verifies a Kick event webhook and parses its body.
+// The subscription id is not part of the body. Read it with EventSubscriptionID(request.Header).
 func GetEventFromRequest(request *http.Request) (interface{}, error) {
 	if request == nil {
 		return nil, errors.New("request cannot be nil")

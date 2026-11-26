@@ -30,6 +30,8 @@ Headers
 "Kick-Event-Message-Id": "01JMND5PSxxxxxx"
 ```
 
+`Kick-Event-Subscription-Id` is the subscription that produced the webhook. It is not part of the body. `EventSubscriptionID` reads it from the request headers.
+
 ```go
     subscriptionName, _ := gokick.NewSubscriptionName("chat.message.sent")  // value from "Kick-Event-Type" header
 	response, _ := gokick.ValidateAndParseEvent(
@@ -92,6 +94,7 @@ output
 
 ```go
     req := http.Request{} // your request here
+	subscriptionID := gokick.EventSubscriptionID(req.Header)
 	response, _ := gokick.GetEventFromRequest(req)
 
 	event := response.(*gokick.ChatMessageEvent) // need to cast the type depending of the subscriptionName
