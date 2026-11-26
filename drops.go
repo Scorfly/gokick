@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -127,4 +129,62 @@ func (c *Client) UpdateDropsClaims(ctx context.Context, claims []DropsClaimUpdat
 	}
 
 	return EmptyResponse{}, nil
+}
+
+// DropsClaimEvent is the body Kick POSTs when a viewer claims a Drops reward.
+// ExternalID is empty when the reward has no external reference.
+type DropsClaimEvent struct {
+	ClaimID    string `json:"claim_id"`
+	UserID     int    `json:"user_id"`
+	CampaignID string `json:"campaign_id"`
+	RewardID   string `json:"reward_id"`
+	ExternalID string `json:"external_id"`
+}
+
+// dropsClaimRequestMeta reads the headers Kick sends on a Drops claim webhook.
+// Those names differ from event-subscription webhooks: Kick-Event-Message-ID and Kick-Event-Timestamp.
+// Go canonicalizes the message ID header to Kick-Event-Message-Id.
+func dropsClaimRequestMeta(h http.Header) (signature, messageID, timestamp string) {
+	signature = h.Get("Kick-Event-Signature")
+	messageID = h.Get("Kick-Event-Message-Id")
+	timestamp = h.Get("Kick-Event-Timestamp")
+	return signature, messageID, timestamp
+}
+
+// GetDropsClaimFromRequest verifies a Drops claim webhook and parses its body.
+// The signature is message ID, timestamp, and the raw body, joined by dots, same as other Kick webhooks.
+// There is no Kick-Event-Type header on this webhook.
+func GetDropsClaimFromRequest(request *http.Request) (DropsClaimEvent, error) {
+	if request == nil {
+		return DropsClaimEvent{}, errors.New("request cannot be nil")
+	}
+
+	signature, messageID, timestamp := dropsClaimRequestMeta(request.Header)
+
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		return DropsClaimEvent{}, fmt.Errorf("failed to read body: %v", err)
+	}
+
+	if !SkipSignatureValidation {
+		signed := []byte(fmt.Sprintf("%s.%s.%s", messageID, timestamp, body))
+
+		publicKey, keyErr := parsePublicKey([]byte(DefaultEventPublicKey))
+		if keyErr != nil {
+			return DropsClaimEvent{}, fmt.Errorf("failed to parse public key: %v", keyErr)
+		}
+
+		verifyErr := verifyEventValidity(&publicKey, signed, []byte(signature))
+		if verifyErr != nil {
+			return DropsClaimEvent{}, fmt.Errorf("failed to verify drops claim: %v", verifyErr)
+		}
+	}
+
+	var claim DropsClaimEvent
+	err = json.Unmarshal(body, &claim)
+	if err != nil {
+		return DropsClaimEvent{}, fmt.Errorf("failed to unmarshal drops claim: %v", err)
+	}
+
+	return claim, nil
 }
